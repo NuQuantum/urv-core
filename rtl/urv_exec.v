@@ -299,7 +299,7 @@ module urv_exec
       
       .d_rs1_i(rs1),
       .d_rs2_i(rs2),
-      .d_fun_i(d_fun),
+      .d_fun_i(d_fun_i),
       .w_rd_o (w_rd_multiply_o)
       );
 
