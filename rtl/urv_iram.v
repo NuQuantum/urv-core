@@ -271,10 +271,10 @@ module urv_iram
               $fscanf(f,"%s %08x %08x", cmd,addr,data);
               if(cmd == "write")
 		begin
-                   mem[addr % g_size][7:0] = data[31:24];
-                   mem[addr % g_size][15:8] = data[23:16];
-                   mem[addr % g_size][23:16] = data[15:8];
-                   mem[addr % g_size][31:24] = data[7:0];
+                   mem[addr % g_size][31:24] = data[31:24];
+                   mem[addr % g_size][23:16] = data[23:16];
+                   mem[addr % g_size][15:8] = data[15:8];
+                   mem[addr % g_size][7:0] = data[7:0];
 		end
            end
       end // if (g_simulation && g_init_file != "")
@@ -359,10 +359,9 @@ module urv_iram
 	 
 	   assign qb_o = qb_int;
 	 
-	// synthesis translate_on
 
-      end // else: !if(!g_simulation)
-   
+//      end // else: !if(!g_simulation)
+endmodule 
 `endif
 
 `ifdef URV_PLATFORM_ALTERA

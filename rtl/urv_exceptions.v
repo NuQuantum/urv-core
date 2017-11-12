@@ -47,21 +47,21 @@ module urv_exceptions
 
    input [31:0]  x_csr_write_value_i,
   
-   output 	 x_exception_o,
+   output reg	 x_exception_o,
    input [31:0]  x_exception_pc_i,
    output [31:0] x_exception_pc_o,
    output [31:0] x_exception_vector_o,
+   input x_exception_taken_i,
   
    output [31:0] csr_mstatus_o,
    output [31:0] csr_mip_o,
    output [31:0] csr_mie_o,
    output [31:0] csr_mepc_o,
    output [31:0] csr_mcause_o
-
    );
 
    
-
+   
    reg [31:0] 	 csr_mepc;
    reg [31:0] 	 csr_mie;
    reg 		 csr_ie;
@@ -72,6 +72,7 @@ module urv_exceptions
    reg [3:0] 	 cause;
 
    reg [5:0] 	 except_vec_masked;
+   reg exception_pending;
 
    assign csr_mcause_o = {28'h0, csr_mcause};
    assign csr_mepc_o = csr_mepc;
@@ -80,7 +81,7 @@ module urv_exceptions
    assign csr_mstatus_o[31:1] = 0;
    
    reg [31:0] 	 csr_mip;
-
+   
    always@*
      begin
 	csr_mip <= 0;
@@ -91,11 +92,9 @@ module urv_exceptions
 	csr_mip[`EXCEPT_TIMER] <= except_vec_masked[4];
 	csr_mip[`EXCEPT_IRQ] <= except_vec_masked[5];
      end
-   
+
 
    assign csr_mip_o = csr_mip;
-   
-   
    
    always@(posedge clk_i)
      if (rst_i)
@@ -132,7 +131,6 @@ module urv_exceptions
    always@*
      exception <= |except_vec_masked | exp_invalid_insn_i;
 
-   reg exception_pending;
 
    assign x_exception_vector_o = 'h8;
    
@@ -161,8 +159,7 @@ module urv_exceptions
        end else if(!x_stall_i && !x_kill_i) begin
 	  if ( d_is_eret_i )
 	    exception_pending <= 0;
-
-          if ( !exception_pending && exception )
+          else if ( x_exception_taken_i )
 	    begin
 	       csr_mepc <= x_exception_pc_i;
 	       csr_mcause <= cause;
@@ -191,7 +188,14 @@ module urv_exceptions
    
 
    assign x_exception_pc_o = csr_mepc;
-   assign x_exception_o = exception & !exception_pending;
+
+   always@(posedge clk_i)
+     if (rst_i)
+       x_exception_o <= 0;
+   else if (x_exception_taken_i)
+       x_exception_o <= 0;
+   else if (exception && !exception_pending)
+       x_exception_o <= 1;
    
 endmodule // urv_exceptions
 

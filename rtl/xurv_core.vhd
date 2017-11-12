@@ -237,7 +237,7 @@ begin
     port map (
       clk_i            => clk_sys_i,
       rst_i            => cpu_rst,
-      irq_i            => '0',
+      irq_i            => irq_i(0),
       im_addr_o        => im_addr,
       im_data_i        => im_data,
       im_valid_i       => im_valid,

@@ -117,7 +117,9 @@ module urv_exec
    
    reg [31:0] 	 alu_op1, alu_op2, alu_result;
    reg [31:0] 	 rd_value;
-      
+
+   wire 	 exception_taken;
+   
    reg 		 branch_take;
    reg 		 branch_condition_met;
    
@@ -141,7 +143,9 @@ module urv_exec
    wire [31:0] 	 csr_mie, csr_mip, csr_mepc, csr_mstatus,csr_mcause;
    wire [31:0] 	 csr_write_value;
    wire [31:0] 	 exception_address, exception_vector;
-   
+
+   reg [31:0] exception_pc;
+
    urv_csr csr_regs
      (
       
@@ -194,18 +198,18 @@ module urv_exec
       .exp_invalid_insn_i(d_is_undef_i && !x_stall_i && !x_kill_i && d_valid_i),
 
       .x_exception_o(exception),
-      .x_exception_pc_i(d_pc_i),
+      .x_exception_pc_i(exception_pc),
       .x_exception_pc_o(exception_address),
       .x_exception_vector_o(exception_vector),
+      .x_exception_taken_i(exception_taken),
 
       .csr_mstatus_o(csr_mstatus),
       .csr_mip_o(csr_mip),
       .csr_mie_o(csr_mie),
       .csr_mepc_o(csr_mepc),
       .csr_mcause_o(csr_mcause)
-
       );
-
+   
    
    // branch condition decoding   
    always@*
@@ -416,8 +420,8 @@ module urv_exec
 
    assign dm_load_o =  d_is_load_i & d_valid_i & !x_kill_i & !x_stall_i & !exception;
    assign dm_store_o = d_is_store_i & d_valid_i & !x_kill_i & !x_stall_i & !exception;
-   
 
+   
    // X/W pipeline registers
    always@(posedge clk_i) 
      if (rst_i) begin
@@ -428,7 +432,7 @@ module urv_exec
 	
      end else if (!x_stall_i) begin
 	f_branch_target_o <= branch_target;
-	f_branch_take <= branch_take && !x_kill_i && d_valid_i;
+	f_branch_take <= branch_take && !x_kill_i && (d_valid_i || exception);
 	w_rd_o <= d_rd_i;
 	w_rd_value_o <= rd_value;
 
@@ -442,9 +446,12 @@ module urv_exec
 	w_valid_o <= !exception; 
      end // else: !if(rst_i)
 
-   assign f_branch_take_o = f_branch_take;
+   always@*
+     exception_pc <= d_pc_i;
    
-
+   assign f_branch_take_o = f_branch_take;
+   assign exception_taken = exception && (branch_take && !x_kill_i && (d_valid_i || exception));
+   
    // pipeline control: generate stall request signal
    always@*
    // never stall on taken branch
