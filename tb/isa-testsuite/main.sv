@@ -18,7 +18,7 @@
  
 */
 
-`include "rv_defs.v"
+`include "urv_defs.v"
 
 `timescale 1ns/1ps
 
@@ -61,8 +61,8 @@ module main;
         begin
            int addr, data;
            string cmd;
-           
-           $fscanf(f,"%s %08x %08x", cmd,addr,data);
+
+           void'($fscanf(f,"%s %08x %08x", cmd,addr,data));
            if(cmd == "write")
              begin
                 mem[addr % mem_size] = data;
@@ -111,7 +111,7 @@ module main;
 	dm_data_l <= mem[(dm_addr/4) % mem_size];
    end	   
 
-   rv_cpu DUT
+   urv_cpu DUT
      (
       .clk_i(clk),
       .rst_i(rst),
@@ -143,19 +143,20 @@ module main;
    
    initial begin
       string tests[$];
-      string test_dir = "../../sw/testsuite/isa";
-      
-      
-      int f = $fopen( {test_dir,"/tests.lst"} ,"r");
+      const string test_dir = "../../sw/testsuite/isa";
+
+
+      int          f;
       int     n, i;
 
       f_console = $fopen("console.txt","wb");
 
+      f = $fopen( {test_dir,"/tests.lst"} ,"r");
       while(!$feof(f))
         begin
            string fname;
-           
-           $fscanf(f,"%s", fname);
+
+           void'($fscanf(f,"%s", fname));
 	   tests.push_back(fname);
 	   
 	   

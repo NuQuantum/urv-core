@@ -1,5 +1,5 @@
 sim_tool = "modelsim"
-top_module="main"
+sim_top="main"
 syn_device="xc6slx150t"
 
 action = "simulation"
@@ -10,4 +10,4 @@ vcom_opt="-mixedsvvh l"
 
 files = [ "main.sv" ];
 
-modules = {"local" : [ "../../rtl" ] }
+modules = {"local" : [ "../../rtl", "../../ip_cores/general-cores" ] }

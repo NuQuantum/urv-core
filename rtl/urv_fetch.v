@@ -36,7 +36,7 @@ module urv_fetch
  output reg 	   f_valid_o,
  output [31:0] 	   f_ir_o,
  output reg [31:0] f_pc_o,
-  
+
  input [31:0] 	   x_pc_bra_i,
  input 		   x_bra_i
 );

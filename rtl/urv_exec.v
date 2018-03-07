@@ -59,7 +59,7 @@ module urv_exec
    input 	     d_is_shift_i,
    input 	     d_is_load_i,
    input 	     d_is_store_i,
-   input 	     d_is_divide_i,
+  // input 	     d_is_divide_i,
    input 	     d_is_undef_i,
 
    input [31:0]      d_alu_op1_i,
