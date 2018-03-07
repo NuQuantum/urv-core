@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include "pp-printf.h"
 
 void rv_test_pass(int num)
 {

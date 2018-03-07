@@ -20,14 +20,14 @@ default: all
 # Build rules
 #--------------------------------------------------------------------
 
-RISCV_PREFIX=riscv64-unknown-elf-
+RISCV_PREFIX=riscv32-elf-
 RISCV_GCC = $(RISCV_PREFIX)gcc
 ENTROPY = -DENTROPY=$(shell echo $$$$)
-RISCV_GCC_OPTS = $(ENTROPY) -mcmodel=medany -nostartfiles -fvisibility=hidden -Wa,-march=RV32IM -DSIM -I../../common
+RISCV_GCC_OPTS = $(ENTROPY) -mcmodel=medany -nostartfiles -fvisibility=hidden -Wa,-march=rv32im -DSIM -I../../common
 RISCV_OBJDUMP = $(RISCV_PREFIX)objdump --disassemble-all --disassemble-zeroes --section=.text --section=.text.startup --section=.text.init --section=.data
 RISCV_SIM = spike --extension=hwacha
 
-COMMON_SRCS = ../../common/crt0.S ../../common/irq.S ../../common/_emulate.o ../../common/test-common.c ../../common/printf.c ../../common/uart.c ../../common/vsprintf-xint.c
+COMMON_SRCS = ../../common/crt0.S ../../common/irq.S ../../common/emulate.c ../../common/test-common.c ../../common/printf.c ../../common/uart.c ../../common/vsprintf-xint.c
 
 vpath %.S $(isa_src_dir)
 
@@ -35,7 +35,7 @@ vpath %.S $(isa_src_dir)
 # Build assembly tests
 
 %.ram: %
-	riscv64-unknown-elf-objcopy -O binary $< tmp.bin
+	$(RISCV_PREFIX)objcopy -O binary $< tmp.bin
 	../../genraminit tmp.bin 16384 > $@
 
 %.dump: %
@@ -64,7 +64,7 @@ tests += $$($(1)_tests)
 
 endef
 
-$(eval $(call compile_template,rv32ui,-m32))
+$(eval $(call compile_template,rv32ui,))
 
 tests_dump = $(addsuffix .dump, $(tests))
 tests_ram = $(addsuffix .ram, $(tests))
