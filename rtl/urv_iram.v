@@ -16,7 +16,7 @@
 
  You should have received a copy of the GNU Lesser General Public
  License along with this library.
- 
+
 */
 
 `timescale 1ns/1ps
@@ -30,7 +30,7 @@ module urv_iram
     parameter g_size = 65536,
     parameter g_init_file = "",
     parameter g_simulation = 0
-    ) 
+    )
    (
     input 	  clk_i,
 
@@ -39,7 +39,7 @@ module urv_iram
     input [31:0]  aa_i,
     input [3:0]   bwea_i,
     input [31:0]  da_i,
-    output [31:0] qa_o, 
+    output [31:0] qa_o,
     input 	  enb_i,
     input 	  web_i,
     input [31:0]  ab_i,
@@ -53,12 +53,12 @@ module urv_iram
    // synthesis translate_off
    reg [31:0] 	     mem[0:g_size/4-1];
    reg [31:0] 	     qa_int, qb_int;
-  
+
    // synthesis translate_on
 
 
-		  
-   
+
+
 `define RAM_INST(id, entity, range_a, range_d, range_bw) \
 	 entity RV_IRAM_BLK_``id \
 	    ( \
@@ -97,9 +97,9 @@ module urv_iram
 	     .WEB((enb) & web_i & bweb_i[range_bw]) \
 	    );
 
-   
-   
-   generate 
+
+
+   generate
       if (!g_simulation) begin
 	 if (g_size == 65536) begin
 	    `RAM_INST(64K_0, RAMB16_S1_S1, 15:2, 0, 0)
@@ -138,7 +138,7 @@ module urv_iram
 	 else if(g_size == 32768) begin
 	    wire[31:0] qa_h, qb_h, qa_l, qb_l;
 	    reg        a14a_d, a14b_d;
-	    
+
 	    `RAM_INST_MUXED(32K_H0, RAMB16_S4_S4, 13:2, 3:0, 0, qa_h, qb_h, aa_i[14], ab_i[14])
 	    `RAM_INST_MUXED(32K_H1, RAMB16_S4_S4, 13:2, 7:4, 0, qa_h, qb_h, aa_i[14], ab_i[14])
 	    `RAM_INST_MUXED(32K_H2, RAMB16_S4_S4, 13:2, 11:8, 1, qa_h, qb_h, aa_i[14], ab_i[14])
@@ -147,7 +147,7 @@ module urv_iram
 	    `RAM_INST_MUXED(32K_H5, RAMB16_S4_S4, 13:2, 23:20, 2, qa_h, qb_h, aa_i[14], ab_i[14])
  	    `RAM_INST_MUXED(32K_H6, RAMB16_S4_S4, 13:2, 27:24, 3, qa_h, qb_h, aa_i[14], ab_i[14])
 	    `RAM_INST_MUXED(32K_H7, RAMB16_S4_S4, 13:2, 31:28, 3, qa_h, qb_h, aa_i[14], ab_i[14])
-	 
+
 	    `RAM_INST_MUXED(32K_L0, RAMB16_S4_S4, 13:2, 3:0, 0, qa_l, qb_l, ~aa_i[14], ~ab_i[14])
 	    `RAM_INST_MUXED(32K_L1, RAMB16_S4_S4, 13:2, 7:4, 0, qa_l, qb_l, ~aa_i[14], ~ab_i[14])
 	    `RAM_INST_MUXED(32K_L2, RAMB16_S4_S4, 13:2, 11:8, 1, qa_l, qb_l, ~aa_i[14], ~ab_i[14])
@@ -165,12 +165,12 @@ module urv_iram
 
 	    assign qa_o = a14a_d ? qa_h : qa_l;
 	    assign qb_o = a14b_d ? qb_h : qb_l;
-	    
+
 	 end else if(g_size == 16384) begin
 	    `RAM_INST(16K_0, RAMB16_S4_S4, 13:2, 3:0, 0)
 	    `RAM_INST(16K_1, RAMB16_S4_S4, 13:2, 7:4, 0)
 	    `RAM_INST(16K_2, RAMB16_S4_S4, 13:2, 11:8, 1)
-	    `RAM_INST(16K_3, RAMB16_S4_S4, 13:2, 15:12, 1)	
+	    `RAM_INST(16K_3, RAMB16_S4_S4, 13:2, 15:12, 1)
 	    `RAM_INST(16K_4, RAMB16_S4_S4, 13:2, 19:16, 2)
 	    `RAM_INST(16K_5, RAMB16_S4_S4, 13:2, 23:20, 2)
  	    `RAM_INST(16K_6, RAMB16_S4_S4, 13:2, 27:24, 3)
@@ -180,18 +180,18 @@ module urv_iram
 	       $error("Unsupported Spartan-6 IRAM size: %d", g_size);
 	       $stop;
 	    end
-	    
-	    
+
+
 	 end // else: !if(g_size == 16384)
-	 
-	 
-	 
+
+
+
       end else begin // if (!g_simulation)
 
 // synthesis translate_off
 	 always@(posedge clk_i)
 	   begin
- 	   
+
 
 	      if(ena_i)
 		begin
@@ -221,14 +221,14 @@ module urv_iram
 		     mem [(ab_i / 4) % g_size][31:24] <= db_i[31:24];
 
 		end
-	      
-		     
+
+
 	   end // always@ (posedge clk_i)
-	 
+
 	 assign qa_o = qa_int;
-	 
+
 	   assign qb_o = qb_int;
-	 
+
 	// synthesis translate_on
 
       end // else: !if(!g_simulation)
@@ -237,7 +237,6 @@ module urv_iram
    endgenerate
 
    // synthesis translate_off
-  
 
 
    
@@ -245,30 +244,30 @@ module urv_iram
    integer 		     tmp, f, addr;
    reg[31:0] data;
    reg [8*20-1:0]	     cmd;
-   
-   
-   
+
+
+
    initial begin
       if(g_simulation && g_init_file != "") begin : init_ram_contents
 	 $display("Initializing RAM contents from %s", g_init_file);
-	 
+
 	 f = $fopen(g_init_file,"r");
 
 
-	 
+
 	 if( f == 0)
 	   begin
 	      $error("can't open: %s", g_init_file);
 	      $stop;
 	   end
-      
-	 
+
+
 
 	 while(!$feof(f))
            begin
            
               
-              tmp = $fscanf(f, "%s %08x %08x", cmd,addr, data);
+              tmp = $fscanf(f, "%s %08x %08x", cmd, addr, data);
               if(cmd == "write")
 		begin
                    mem[addr % g_size][31:24] = data[31:24];
@@ -279,10 +278,10 @@ module urv_iram
            end
       end // if (g_simulation && g_init_file != "")
    end
-   
-   
+
+
    // synthesis translate_on
-   
+
 
 endmodule // urv_iram
 
@@ -295,7 +294,7 @@ module urv_iram
     parameter g_size = 65536,
     parameter g_init_file = "",
     parameter g_simulation = 0
-    ) 
+    )
    (
     input 	  clk_i,
 
@@ -304,7 +303,7 @@ module urv_iram
     input [31:0]  aa_i,
     input [3:0]   bwea_i,
     input [31:0]  da_i,
-    output [31:0] qa_o, 
+    output [31:0] qa_o,
     input 	  enb_i,
     input 	  web_i,
     input [31:0]  ab_i,
@@ -317,11 +316,11 @@ module urv_iram
 
    reg [31:0] 	     mem[0:g_size/4-1];
    reg [31:0] 	     qa_int, qb_int;
-  
+
 
 	 always@(posedge clk_i)
 	   begin
- 	   
+
 
 	      if(ena_i)
 		begin
@@ -351,17 +350,17 @@ module urv_iram
 		     mem [(ab_i / 4)][31:24] <= db_i[31:24];
 
 		end
-	      
-		     
+
+
 	   end // always@ (posedge clk_i)
-	 
+
 	 assign qa_o = qa_int;
-	 
+
 	   assign qb_o = qb_int;
-	 
+
 
 //      end // else: !if(!g_simulation)
-endmodule 
+endmodule
 `endif
 
 `ifdef URV_PLATFORM_ALTERA
@@ -370,7 +369,7 @@ module urv_iram
     parameter g_size = 65536,
     parameter g_init_file = "",
     parameter g_simulation = 0
-    ) 
+    )
    (
     input 	  clk_i,
 
@@ -379,7 +378,7 @@ module urv_iram
     input [31:0]  aa_i,
     input [3:0]   bwea_i,
     input [31:0]  da_i,
-    output [31:0] qa_o, 
+    output [31:0] qa_o,
     input 	  enb_i,
     input 	  web_i,
     input [31:0]  ab_i,
@@ -389,7 +388,7 @@ module urv_iram
     );
 
    localparam g_addr_width = (g_size==65536?14:0);
-      
+
    	altsyncram
 	  ram (
 				.address_a (aa_i[g_addr_width+1:2]),
@@ -454,4 +453,3 @@ endmodule // urv_iram
 
 
 `endif //  `ifdef URV_PLATFORM_ALTERA
-   

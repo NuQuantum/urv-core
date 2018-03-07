@@ -16,7 +16,7 @@
 
  You should have received a copy of the GNU Lesser General Public
  License along with this library.
- 
+
 */
 
 `include "urv_defs.v"
@@ -30,7 +30,7 @@ module urv_timer
 
    output [39:0] csr_time_o,
    output [39:0] csr_cycles_o,
-  
+
    output 	 sys_tick_o
    );
 
@@ -38,13 +38,13 @@ module urv_timer
    parameter g_clock_frequency = 62500000;
 
    localparam g_prescaler = (g_clock_frequency / g_timer_frequency ) - 1;
-   
+
    reg [23:0] 	 presc;
    reg 		 presc_tick;
-   
+
    reg [39:0] 	 cycles;
    reg [39:0] 	 ticks;
-   
+
    always@(posedge clk_i)
      if(rst_i)
        begin
@@ -65,16 +65,16 @@ module urv_timer
        ticks <= 0;
      else if (presc_tick)
        ticks <= ticks + 1;
-   
+
    always @(posedge clk_i)
      if (rst_i)
        cycles <= 0;
      else
        cycles <= cycles + 1;
-   
-   
+
+
    assign csr_time_o = ticks;
    assign csr_cycles_o = cycles;
    assign sys_tick_o = presc_tick;
-   
+
 endmodule // urv_timer

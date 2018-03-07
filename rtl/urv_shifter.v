@@ -16,7 +16,7 @@
 
  You should have received a copy of the GNU Lesser General Public
  License along with this library.
- 
+
 */
 
 `include "urv_defs.v"
@@ -39,7 +39,7 @@ module urv_shifter
      input 	       d_valid_i,
      input [31:0]      d_rs1_i,
      output reg [31:0] w_rd_o,
-    
+
      input [4:0]       d_shamt_i,
      input [2:0]       d_fun_i,
      input 	       d_shifter_sign_i,
@@ -61,9 +61,9 @@ module urv_shifter
    reg s2_extend_sign;
    reg [4:0] s2_shift;
    reg [2:0] s2_func;
-   
-   
-   
+
+
+
    // stage 1 pipe register
    always@(posedge clk_i)
      if (!x_stall_i)
@@ -73,9 +73,9 @@ module urv_shifter
 	  s2_func <= d_fun_i;
 	  s1_out <= shift_8;
        end
-   
+
    reg [31:0] shift_4, shift_2, shift_1, shift_post;
-   
+
    // stage 2
    always@*
      begin
@@ -89,4 +89,3 @@ module urv_shifter
      w_rd_o <= shift_post;
 
 endmodule // urv_shifter
-

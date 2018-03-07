@@ -1,5 +1,5 @@
 /*
- 
+
  uRV - a tiny and dumb RISC-V core
  Copyright (c) 2015 CERN
  Author: Tomasz Włostowski <tomasz.wlostowski@cern.ch>
@@ -16,7 +16,7 @@
 
  You should have received a copy of the GNU Lesser General Public
  License along with this library.
- 
+
 */
 
 `include "urv_defs.v"
@@ -30,14 +30,14 @@ module urv_exceptions
 
    input 	 x_stall_i,
    input 	 x_kill_i,
-  
+
    input 	 d_is_csr_i,
    input 	 d_is_eret_i,
-  
+
    input [2:0] 	 d_fun_i,
    input [4:0] 	 d_csr_imm_i,
    input [11:0]  d_csr_sel_i,
-  
+
    input 	 exp_irq_i,
    input 	 exp_tick_i,
    input 	 exp_breakpoint_i,
@@ -46,13 +46,13 @@ module urv_exceptions
    input 	 exp_invalid_insn_i,
 
    input [31:0]  x_csr_write_value_i,
-  
+
    output reg	 x_exception_o,
    input [31:0]  x_exception_pc_i,
    output [31:0] x_exception_pc_o,
    output [31:0] x_exception_vector_o,
    input x_exception_taken_i,
-  
+
    output [31:0] csr_mstatus_o,
    output [31:0] csr_mip_o,
    output [31:0] csr_mie_o,
@@ -60,14 +60,14 @@ module urv_exceptions
    output [31:0] csr_mcause_o
    );
 
-   
-   
+
+
    reg [31:0] 	 csr_mepc;
    reg [31:0] 	 csr_mie;
    reg 		 csr_ie;
 
    reg [3:0] 	 csr_mcause;
-   
+
    reg 		 exception;
    reg [3:0] 	 cause;
 
@@ -79,9 +79,9 @@ module urv_exceptions
    assign csr_mie_o = csr_mie;
    assign csr_mstatus_o[0] = csr_ie;
    assign csr_mstatus_o[31:1] = 0;
-   
+
    reg [31:0] 	 csr_mip;
-   
+
    always@*
      begin
 	csr_mip <= 0;
@@ -95,7 +95,7 @@ module urv_exceptions
 
 
    assign csr_mip_o = csr_mip;
-   
+
    always@(posedge clk_i)
      if (rst_i)
        except_vec_masked <= 0;
@@ -127,13 +127,13 @@ module urv_exceptions
 	     except_vec_masked[5] <= csr_mie[`EXCEPT_IRQ] & csr_ie;
 	end // else: !if(!x_stall_i && !x_kill_i && d_is_csr_i && d_csr_sel_i == `CSR_ID_MIP)
      end // else: !if(rst_i)
-   
+
    always@*
      exception <= |except_vec_masked | exp_invalid_insn_i;
 
 
    assign x_exception_vector_o = 'h8;
-   
+
    always@*
      if(exp_invalid_insn_i || except_vec_masked[0])
        cause <= `EXCEPT_ILLEGAL_INSN;
@@ -147,15 +147,15 @@ module urv_exceptions
        cause <= `EXCEPT_TIMER;
      else
        cause <= `EXCEPT_IRQ;
-   
+
    always@(posedge clk_i)
-     if(rst_i) 
+     if(rst_i)
        begin
 	  csr_mepc <= 0;
 	  csr_mie <= 0;
 	  csr_ie <= 0;
 	  exception_pending <= 0;
-	  
+
        end else if(!x_stall_i && !x_kill_i) begin
 	  if ( d_is_eret_i )
 	    exception_pending <= 0;
@@ -164,13 +164,13 @@ module urv_exceptions
 	       csr_mepc <= x_exception_pc_i;
 	       csr_mcause <= cause;
 	       exception_pending <= 1;
-	    end 
+	    end
 
 	  if(d_is_csr_i) begin
 	     case (d_csr_sel_i)
-	       `CSR_ID_MSTATUS: 
+	       `CSR_ID_MSTATUS:
 		 csr_ie <= x_csr_write_value_i[0];
-	       `CSR_ID_MEPC: 
+	       `CSR_ID_MEPC:
 		 csr_mepc <= x_csr_write_value_i;
 	       `CSR_ID_MIE:
 		 begin
@@ -185,7 +185,7 @@ module urv_exceptions
 
 	  end // if (d_is_csr_i)
        end // if (!x_stall_i && !x_kill_i)
-   
+
 
    assign x_exception_pc_o = csr_mepc;
 
@@ -196,8 +196,5 @@ module urv_exceptions
        x_exception_o <= 0;
    else if (exception && !exception_pending)
        x_exception_o <= 1;
-   
+
 endmodule // urv_exceptions
-
-
-

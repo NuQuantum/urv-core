@@ -16,7 +16,7 @@
 
  You should have received a copy of the GNU Lesser General Public
  License along with this library.
- 
+
 */
 
 `include "urv_defs.v"
@@ -34,7 +34,7 @@ module urv_divide
 
    input 	     d_valid_i,
    input 	     d_is_divide_i,
-  
+
    input [31:0]      d_rs1_i,
    input [31:0]      d_rs2_i,
 
@@ -49,7 +49,7 @@ module urv_divide
 
    wire [32:0] 	     alu_result;
 
-   
+
    reg [31:0] 	     alu_op1;
    reg [31:0] 	     alu_op2;
 
@@ -57,7 +57,7 @@ module urv_divide
 
    wire [31:0] r_next = { r[30:0], n[31 - (state - 3)] };
 
-   
+
    always@*
      case(state) // synthesis full_case parallel_case
        0: begin alu_op1 <= 'hx; alu_op2 <= 'hx; end
@@ -69,13 +69,13 @@ module urv_divide
      endcase // case (state)
 
    reg alu_sub;
-   
+
    assign alu_result = alu_sub ? {1'b0, alu_op1} - {1'b0, alu_op2} : {1'b0, alu_op1} + {1'b0, alu_op2};
-   
+
    wire alu_ge = ~alu_result [32];
 
    wire start_divide = !x_stall_i && !x_kill_i && d_valid_i && d_is_divide_i;
-   
+
    wire done = (is_rem ? state == 37 : state == 36 );
 
 
@@ -94,7 +94,7 @@ module urv_divide
        default:
 	 alu_sub <= 1;
      endcase // case (state)
-   
+
 
 
    always@(posedge clk_i)
@@ -102,7 +102,7 @@ module urv_divide
        state <= 0;
      else if (state != 0 || start_divide)
        state <= state + 1;
-   
+
    always@(posedge clk_i)
 	  case ( state ) // synthesis full_case parallel_case
 	    0:
@@ -112,15 +112,15 @@ module urv_divide
 		 r <= 0;
 
 		 is_rem <= (d_fun_i == `FUNC_REM || d_fun_i ==`FUNC_REMU);
-		 
+
 		 n_sign <= d_rs1_i[31];
 		 d_sign <= d_rs2_i[31];
 	      end
 
-	    1: 
+	    1:
 		n <= alu_result[31:0];
-	  
-	    2: 
+
+	    2:
 		d <= alu_result[31:0];
 
 	    35:
@@ -131,14 +131,13 @@ module urv_divide
 
 	    default: // 3..34: 32 divider iterations
 	      begin
-		 
+
 		 q <= { q[30:0], alu_ge };
 		 r <= alu_ge ? alu_result : r_next;
-		 
-		 
+
+
 	      end
 	  endcase // case ( state )
-   
-   
-endmodule // rv_divide
 
+
+endmodule // rv_divide

@@ -16,7 +16,7 @@
 
  You should have received a copy of the GNU Lesser General Public
  License along with this library.
- 
+
 */
 
 `include "urv_defs.v"
@@ -30,17 +30,17 @@ module urv_writeback
 
    input 	     w_stall_i,
    output 	     w_stall_req_o,
-   
+
    input [2:0] 	     x_fun_i,
    input 	     x_load_i,
    input 	     x_store_i,
-   
+
    input [31:0]      x_dm_addr_i,
    input [4:0] 	     x_rd_i,
    input [31:0]      x_rd_value_i,
    input 	     x_rd_write_i,
    input 	     x_valid_i,
-   
+
 
    input [31:0]      x_shifter_rd_value_i,
    input [31:0]      x_multiply_rd_value_i,
@@ -49,7 +49,7 @@ module urv_writeback
    input [31:0]      dm_data_l_i,
    input 	     dm_load_done_i,
    input 	     dm_store_done_i,
-   
+
    output [31:0]     rf_rd_value_o,
    output [4:0]      rf_rd_o,
    output 	     rf_rd_write_o
@@ -69,7 +69,7 @@ module urv_writeback
 	      2'b11:  load_value <= {{24{dm_data_l_i[31]}}, dm_data_l_i[31:24] };
 	      default: load_value <= 32'hx;
 	    endcase // case ( x_dm_addr_i [1:0] )
-	  
+
 	  `LDST_BU:
 	    case ( x_dm_addr_i [1:0] )
 	      2'b00:  load_value <= {24'h0, dm_data_l_i[7:0] };
@@ -78,7 +78,7 @@ module urv_writeback
 	      2'b11:  load_value <= {24'h0, dm_data_l_i[31:24] };
 	      default: load_value <= 32'hx;
 	    endcase // case ( x_dm_addr_i [1:0] )
-	  
+
 	  `LDST_H:
 	    case ( x_dm_addr_i [1:0] )
 	      2'b00, 2'b01: load_value <= {{16{dm_data_l_i[15]}}, dm_data_l_i[15:0] };
@@ -92,7 +92,7 @@ module urv_writeback
 	      2'b10, 2'b11:  load_value <= {16'h0, dm_data_l_i[31:16] };
 	      default: load_value <= 32'hx;
 	    endcase // case ( x_dm_addr_i [1:0] )
-	    
+
 	  `LDST_L: load_value <= dm_data_l_i;
 
 	  default: load_value <= 32'hx;
@@ -101,7 +101,7 @@ module urv_writeback
 
    reg rf_rd_write;
    reg [31:0] rf_rd_value;
-      
+
    always@*
      if( x_load_i )
        rf_rd_value <= load_value;

@@ -16,14 +16,14 @@
 
  You should have received a copy of the GNU Lesser General Public
  License along with this library.
- 
+
 */
 
 `include "urv_defs.v"
 
 `timescale 1ns/1ps
 
-module urv_decode 
+module urv_decode
 (
  input 		   clk_i,
  input 		   rst_i,
@@ -79,7 +79,7 @@ module urv_decode
 
    wire [4:0] d_opcode = f_ir_i[6:2];
    wire [2:0] d_fun = f_ir_i[14:12];
-	      
+
    reg [4:0]  x_rs1;
    reg [4:0]  x_rs2;
    reg [4:0]  x_rd;
@@ -87,8 +87,8 @@ module urv_decode
    reg 	      x_valid;
    reg 	      x_is_shift;
    reg 	      x_rd_write;
-   
-   
+
+
    assign x_rs1_o = x_rs1;
    assign x_rs2_o = x_rs2;
    assign x_rd_o = x_rd;
@@ -124,7 +124,7 @@ module urv_decode
 	  endcase // case (x_opcode)
        end else
 	 load_hazard <= 0;
-   
+
    reg 	inserting_nop;
 
    // bubble insertion following a hazzard
@@ -141,9 +141,9 @@ module urv_decode
 
    assign d_stall_req_o = load_hazard && !inserting_nop;
 
-   
+
    assign x_valid_o = x_valid;
-   
+
    always@(posedge clk_i)
      if(rst_i || d_kill_i )
        begin
@@ -161,10 +161,10 @@ module urv_decode
 	  x_rs2 <= f_rs2;
 	  x_rd <= f_rd;
 	  x_opcode <= d_opcode;
-	  
+
 	  x_shamt_o <= f_ir_i[24:20];
        end
-   
+
    // ALU function decoding
    always@(posedge clk_i)
      if(!d_stall_i)
@@ -174,7 +174,7 @@ module urv_decode
 	 default:
 	   x_fun_o <= d_fun;
        endcase // case (f_opcode)
-   
+
    always@(posedge clk_i)
      if(!d_stall_i)
        x_shifter_sign_o <= f_ir_i[30];
@@ -183,13 +183,13 @@ module urv_decode
    wire [31:0] d_imm_s = { {21{ f_ir_i[31] }}, f_ir_i[30:25], f_ir_i[11:8], f_ir_i[7] };
    wire [31:0] d_imm_b = { {20{ f_ir_i[31] }}, f_ir_i[7], f_ir_i[30:25], f_ir_i[11:8], 1'b0 };
    wire [31:0] d_imm_u = { f_ir_i[31], f_ir_i[30:20], f_ir_i[19:12], 12'h000 };
-   wire [31:0] d_imm_j = { {12{f_ir_i[31]}}, 
-			   f_ir_i[19:12], 
+   wire [31:0] d_imm_j = { {12{f_ir_i[31]}},
+			   f_ir_i[19:12],
 			   f_ir_i[20], f_ir_i[30:25], f_ir_i[24:21], 1'b0};
 
-   
+
    reg [31:0] d_imm;
-   
+
 
    // Immediate decode, comb part
    always@*
@@ -207,27 +207,27 @@ module urv_decode
    always@(posedge clk_i)
      if(!d_stall_i)
        x_imm_o <= d_imm;
-   
+
 
    // ALU operand decoding
    always@(posedge clk_i)
      if(!d_stall_i)
        begin
 	  case (d_opcode)
-	    `OPC_LUI, `OPC_AUIPC: 
+	    `OPC_LUI, `OPC_AUIPC:
 	      begin
-		 x_alu_op1_o <= d_imm; 
+		 x_alu_op1_o <= d_imm;
 		 x_use_op1_o <= 1;
 	      end
 	    `OPC_JAL, `OPC_JALR:
 	      begin
-		 x_alu_op1_o <= 4; 
+		 x_alu_op1_o <= 4;
 		 x_use_op1_o <= 1;
 	      end
-	    
+
 	    default:
 	      begin
-		 x_alu_op1_o <= 32'hx; 
+		 x_alu_op1_o <= 32'hx;
 		 x_use_op1_o <= 0;
 	      end
 	  endcase // case (d_opcode)
@@ -243,7 +243,7 @@ module urv_decode
 		 x_alu_op2_o <= f_pc_i;
 		 x_use_op2_o <= 1;
 	      end
-	    
+
 	    `OPC_OP_IMM:
 	      begin
 		 x_alu_op2_o <= d_imm;
@@ -252,15 +252,15 @@ module urv_decode
 
 	    default:
 	      begin
-		 x_alu_op2_o <= 32'hx; 
+		 x_alu_op2_o <= 32'hx;
 		 x_use_op2_o <= 0;
 	      end
 	  endcase // case (d_opcode_i)
        end // if (!d_stall_i)
-   
-   
+
+
    wire d_rd_nonzero = (f_rd != 0);
-   
+
    // misc decoding
    always@(posedge clk_i)
      if(!d_stall_i)
@@ -269,7 +269,7 @@ module urv_decode
 
 	  x_is_load_o <= ( d_opcode == `OPC_LOAD && !load_hazard) ? 1'b1 : 1'b0;
 	  x_is_store_o <= ( d_opcode == `OPC_STORE && !load_hazard) ? 1'b1 : 1'b0;
-	  
+
 	  x_is_mul <= d_is_mul;
 
 	  case (d_opcode)
@@ -292,7 +292,7 @@ module urv_decode
 
 	  // all multiply/divide instructions except MUL
 	  x_is_undef_o <= (d_opcode == `OPC_OP && f_ir_i[25] && d_fun != `FUNC_MUL);
-	  
+
 	  if(d_is_shift)
 	    x_rd_source_o <= `RD_SOURCE_SHIFTER;
 	  else if (d_opcode == `OPC_SYSTEM)
@@ -301,7 +301,7 @@ module urv_decode
 	    x_rd_source_o <= `RD_SOURCE_MULTIPLY;
 	  else
 	    x_rd_source_o <= `RD_SOURCE_ALU;
-	  
+
 	  // rdest write value
 	  case (d_opcode)
 	    `OPC_OP_IMM, `OPC_OP, `OPC_JAL, `OPC_JALR, `OPC_LUI, `OPC_AUIPC:
@@ -312,8 +312,8 @@ module urv_decode
 	      x_rd_write <= 0;
 	  endcase // case (d_opcode)
        end // if (!d_stall_i)
-   
-	
+
+
    // CSR/supervisor instructions
    always@(posedge clk_i)
 	if (!d_stall_i)
@@ -323,11 +323,8 @@ module urv_decode
 	     x_is_csr_o <= (d_opcode == `OPC_SYSTEM) && (d_fun != 0);
 	     x_is_eret_o <= (d_opcode == `OPC_SYSTEM) && (d_fun == 0) && (f_ir_i [31:20] == 12'b000100000000);
 	  end
-   
+
    assign x_is_shift_o = x_is_shift;
    assign x_rd_write_o = x_rd_write;
 
 endmodule // rv_decode
-
-
-		     

@@ -1,5 +1,5 @@
 /*
- 
+
  uRV - a tiny and dumb RISC-V core
  Copyright (c) 2015 CERN
  Author: Tomasz Włostowski <tomasz.wlostowski@cern.ch>
@@ -16,7 +16,7 @@
 
  You should have received a copy of the GNU Lesser General Public
  License along with this library.
- 
+
 */
 
 `include "urv_defs.v"
@@ -38,7 +38,7 @@ module urv_regmem
    );
 
    reg [31:0] 	     ram [0:31];
-   
+
    always@(posedge clk_i)
      if(en1_i)
        q1_o <= ram[a1_i];
@@ -56,7 +56,7 @@ module urv_regmem
       end
    end
    // synthesis translate_on
-   
+
 endmodule
 
 module urv_regfile
@@ -81,7 +81,7 @@ module urv_regfile
 
  input 	       w_bypass_rd_write_i,
  input [31:0]  w_bypass_rd_value_i
- 
+
  );
 
 
@@ -89,7 +89,7 @@ module urv_regfile
    wire [31:0] rs2_regfile;
    wire        write  = (w_rd_store_i && (w_rd_i != 0));
 
-   urv_regmem bank0 
+   urv_regmem bank0
      (
       .clk_i(clk_i),
       .rst_i (rst_i ),
@@ -100,8 +100,8 @@ module urv_regfile
       .a2_i(w_rd_i),
       .d2_i(w_rd_value_i),
       .we2_i (write));
-   
-   
+
+
    urv_regmem bank1
      (
       .clk_i(clk_i),
@@ -114,12 +114,12 @@ module urv_regfile
       .d2_i (w_rd_value_i),
       .we2_i (write)
       );
-   
+
    wire        rs1_bypass_x = w_bypass_rd_write_i && (w_rd_i == d_rs1_i) && (w_rd_i != 0);
    wire        rs2_bypass_x = w_bypass_rd_write_i && (w_rd_i == d_rs2_i) && (w_rd_i != 0);
 
    reg 	       rs1_bypass_w, rs2_bypass_w;
-   
+
    always@(posedge clk_i)
      if(rst_i)
        begin
@@ -129,7 +129,7 @@ module urv_regfile
 	  rs1_bypass_w <= write && (rf_rs1_i == w_rd_i);
 	  rs2_bypass_w <= write && (rf_rs2_i == w_rd_i);
        end
-   
+
    reg [31:0] 	  bypass_w;
 
    always@(posedge clk_i)
@@ -153,9 +153,8 @@ module urv_regfile
 	  2'b01:
 	    x_rs2_value_o <= bypass_w;
 	  default:
-	    x_rs2_value_o <= rs2_regfile;	 
+	    x_rs2_value_o <= rs2_regfile;
 	endcase // case ( {rs2_bypass_x, rs2_bypass_w } )
      end // always@ *
 
 endmodule // urv_regfile
-

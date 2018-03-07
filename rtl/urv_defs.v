@@ -16,7 +16,7 @@
 
  You should have received a copy of the GNU Lesser General Public
  License along with this library.
- 
+
 */
 
 `include "urv_config.v"
@@ -65,16 +65,16 @@
 `define FUNC_REM 3'b110
 `define FUNC_REMU 3'b111
 
-`define RD_SOURCE_ALU 3'b000 
+`define RD_SOURCE_ALU 3'b000
 `define RD_SOURCE_SHIFTER 3'b010
 `define RD_SOURCE_MULTIPLY 3'b001
 `define RD_SOURCE_DIVIDE 3'b011
 `define RD_SOURCE_CSR 3'b011
 
 `define CSR_ID_CYCLESH 12'hc80
-`define CSR_ID_CYCLESL 12'hc00 
+`define CSR_ID_CYCLESL 12'hc00
 `define CSR_ID_TIMEH 12'hc81
-`define CSR_ID_TIMEL 12'hc01 
+`define CSR_ID_TIMEL 12'hc01
 `define CSR_ID_MSCRATCH 12'h340
 `define CSR_ID_MEPC 12'h341
 `define CSR_ID_MSTATUS 12'h300

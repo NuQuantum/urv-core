@@ -16,7 +16,7 @@
 
  You should have received a copy of the GNU Lesser General Public
  License along with this library.
- 
+
 */
 
 `include "urv_defs.v"
@@ -30,17 +30,17 @@ module urv_csr
 
    input 	     x_stall_i,
    input 	     x_kill_i,
-   
+
    input 	     d_is_csr_i,
    input [2:0] 	     d_fun_i,
    input [4:0] 	     d_csr_imm_i,
    input [11:0]      d_csr_sel_i,
-   
-   
+
+
    input [31:0]      d_rs1_i,
-   
+
    output reg [31:0] x_rd_o,
-   
+
    input [39:0]      csr_time_i,
    input [39:0]      csr_cycles_i,
 
@@ -55,14 +55,14 @@ module urv_csr
    input [31:0]      csr_mcause_i
 
    );
-   
-   reg [31:0] 	csr_mscratch; 
-   
+
+   reg [31:0] 	csr_mscratch;
+
    reg [31:0] 	csr_in1;
    reg [31:0] 	csr_in2;
    reg [31:0] 	csr_out;
 
-  
+
    always@*
      case(d_csr_sel_i) // synthesis full_case parallel_case
        `CSR_ID_CYCLESL: csr_in1 <= csr_cycles_i[31:0];
@@ -83,7 +83,7 @@ module urv_csr
 
    genvar 	i;
 
-   
+
    always@*
      case (d_fun_i)
        `CSR_OP_CSRRWI,
@@ -96,13 +96,13 @@ module urv_csr
 
    generate
 
-      
-      for (i=0;i<32;i=i+1) 
+
+      for (i=0;i<32;i=i+1)
 	begin : gen_csr_bits
 
 	   always@*
 	     case(d_fun_i) // synthesis full_case parallel_case
-	       `CSR_OP_CSRRWI, 
+	       `CSR_OP_CSRRWI,
 	       `CSR_OP_CSRRW:
 		 csr_out[i] <= csr_in2[i];
 	       `CSR_OP_CSRRCI,
@@ -115,28 +115,21 @@ module urv_csr
 		 csr_out[i] <= 32'hx;
 	     endcase // case (d_csr_op_i)
 	end // for (i=0;i<32;i=i+1)
-      
+
       endgenerate
-   
-   
+
+
    always@(posedge clk_i)
-     if(rst_i) 
+     if(rst_i)
        csr_mscratch <= 0;
-     else if(!x_stall_i && !x_kill_i && d_is_csr_i) 
+     else if(!x_stall_i && !x_kill_i && d_is_csr_i)
        case (d_csr_sel_i)
-	 `CSR_ID_MSCRATCH: 
+	 `CSR_ID_MSCRATCH:
 	   csr_mscratch <= csr_out;
        endcase // case (d_csr_sel_i)
-   
+
 
    assign x_csr_write_value_o = csr_out;
 
-   
+
 endmodule
-       
-
-
-   
-   
-   
-   

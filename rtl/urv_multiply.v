@@ -16,7 +16,7 @@
 
  You should have received a copy of the GNU Lesser General Public
  License along with this library.
- 
+
 */
 
 `include "urv_defs.v"
@@ -29,9 +29,9 @@ module urv_mult18x18
   (
    input 	 clk_i,
    input 	 rst_i,
-  
+
    input 	 stall_i,
-  
+
    input [17:0]  x_i,
    input [17:0]  y_i,
 
@@ -99,9 +99,9 @@ module urv_mult18x18
   (
    input 	 clk_i,
    input 	 rst_i,
-   
+
    input 	 stall_i,
-   
+
    input [17:0]  x_i,
    input [17:0]  y_i,
 
@@ -112,7 +112,7 @@ module urv_mult18x18
    always@(posedge clk_i)
      if(!stall_i)
        q_o <= x_i * y_i;
-   
+
 endmodule // urv_mult18x18
 `endif //  `ifdef URV_PLATFORM_GENERIC
 
@@ -122,9 +122,9 @@ module urv_mult18x18
   (
    input 	 clk_i,
    input 	 rst_i,
-  
+
    input 	 stall_i,
-  
+
    input [17:0]  x_i,
    input [17:0]  y_i,
 
@@ -155,12 +155,12 @@ endmodule // urv_mult18x18
 `endif
 
 
-module urv_multiply 
+module urv_multiply
   (
    input 	 clk_i,
    input 	 rst_i,
    input 	 x_stall_i,
-   
+
    input [31:0]  d_rs1_i,
    input [31:0]  d_rs2_i,
    input [2:0] 	 d_fun_i,
@@ -179,8 +179,8 @@ module urv_multiply
    wire[17:0] yh = { {3{d_rs2_i[31]}}, d_rs2_i[31:17] };
 
    wire [35:0] 	     yl_xl, yl_xh, yh_xl;
-   
-   urv_mult18x18 mul0 
+
+   urv_mult18x18 mul0
      (
       .clk_i(clk_i),
       .rst_i(rst_i),
@@ -212,13 +212,8 @@ module urv_multiply
       .y_i(xh),
       .q_o(yl_xh)
       );
-   
+
    always@*
      w_rd_o <= yl_xl + {yl_xh[14:0], 17'h0} + {yh_xl[14:0], 17'h0};
- 
+
 endmodule // urv_multiply
-
-
-   
-   
-

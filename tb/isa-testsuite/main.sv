@@ -1,5 +1,5 @@
 /*
- 
+
  uRV - a tiny and dumb RISC-V core
  Copyright (c) 2015 twl <twlostow@printf.cc>.
 
@@ -15,7 +15,7 @@
 
  You should have received a copy of the GNU Lesser General Public
  License along with this library.
- 
+
 */
 
 `include "urv_defs.v"
@@ -24,14 +24,14 @@
 
 module main;
 
-   
+
    reg clk = 0;
    reg rst = 1;
-   
+
    wire [31:0] im_addr;
    reg [31:0] im_data;
    reg        im_valid;
-   
+
 
    wire [31:0] dm_addr;
    wire [31:0] dm_data_s;
@@ -40,9 +40,9 @@ module main;
    wire        dm_write;
    reg 	       dm_valid_l = 1;
    reg        dm_ready;
-   
+
    localparam int mem_size = 16384;
-   
+
    reg [31:0]  mem[0:mem_size - 1];
 
    task automatic load_ram(string filename);
@@ -54,9 +54,9 @@ module main;
 	   $error("can't open: %s", filename);
 	   $stop;
 	end
-      
-      
-      
+
+
+
       while(!$feof(f))
         begin
            int addr, data;
@@ -68,13 +68,13 @@ module main;
                 mem[addr % mem_size] = data;
              end
         end
-      
+
    endtask // load_ram
 
    int seed;
 
 
-   
+
    always@(posedge clk)
      begin
 	if(   $dist_uniform(seed, 0, 100 ) <= 100) begin
@@ -82,8 +82,8 @@ module main;
 	   im_valid <= 1;
 	end else
 	   im_valid <= 0;
-	
-	
+
+
 
 	if(dm_write && dm_data_select[0])
 	  mem [(dm_addr / 4) % mem_size][7:0] <= dm_data_s[7:0];
@@ -93,23 +93,23 @@ module main;
 	  mem [(dm_addr / 4) % mem_size][23:16] <= dm_data_s[23:16];
 	if(dm_write && dm_data_select[3])
 	  mem [(dm_addr / 4) % mem_size][31:24] <= dm_data_s[31:24];
-	
 
-	
-	
+
+
+
 //	dm_data_l <= mem[(dm_addr/4) % mem_size];
-	
-	
+
+
      end // always@ (posedge clk)
 
 
-   
+
    always@(posedge clk)
      begin
 	dm_ready <= 1'b1; // $dist_uniform(seed, 0, 100 ) <= 50;
 
 	dm_data_l <= mem[(dm_addr/4) % mem_size];
-   end	   
+   end
 
    urv_cpu DUT
      (
@@ -117,7 +117,7 @@ module main;
       .rst_i(rst),
 
       .irq_i ( irq ),
-      
+
       // instruction mem I/F
       .im_addr_o(im_addr),
       .im_data_i(im_data),
@@ -134,13 +134,13 @@ module main;
       .dm_load_done_i(1'b1),
       .dm_ready_i(dm_ready)
       );
-   
+
 
    always #5ns clk <= ~clk;
 
    integer f_console, f_exec_log;
    reg 	   test_complete = 0;
-   
+
    initial begin
       string tests[$];
       const string test_dir = "../../sw/testsuite/isa";
@@ -158,8 +158,8 @@ module main;
 
            void'($fscanf(f,"%s", fname));
 	   tests.push_back(fname);
-	   
-	   
+
+
         end
 
 
@@ -172,16 +172,16 @@ module main;
 	   repeat(3) @(posedge clk);
 	   rst = 0;
 	   test_complete=  0;
-	   
+
 	   while(!test_complete)
 	     #1us;
-	   
-	   
+
+
 	end
       end // initial begin
-		    
 
-   
+
+
    always@(posedge clk)
      if(dm_write)
        begin
@@ -199,5 +199,5 @@ module main;
 	       test_complete = 1;
 	    end
        end
- 
+
 endmodule // main
