@@ -134,6 +134,8 @@ module urv_cpu
      (
       .clk_i(clk_i),
       .rst_i(rst_i),
+
+      // instruction memory
       .im_addr_o(im_addr_o),
       .im_data_i(im_data_i),
       .im_valid_i(im_valid_i),

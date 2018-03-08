@@ -33,9 +33,9 @@ module urv_fetch
  input [31:0]      im_data_i,
  input             im_valid_i,
 
- //  Fetch instruction
+ //  Fetched instruction - set on the next cycle.
  output reg        f_valid_o,
- output [31:0]     f_ir_o,
+ output reg [31:0] f_ir_o,
  output reg [31:0] f_pc_o,
 
  //  Branch control
@@ -44,12 +44,10 @@ module urv_fetch
 );
 
    reg [31:0] pc;
-   reg [31:0] ir ,ir_prev;
    reg 	      rst_d;
 
    reg [31:0]  pc_next;
    reg [31:0]  pc_plus_4;
-
 
    always@*
      if( x_bra_i )
@@ -59,17 +57,16 @@ module urv_fetch
      else
        pc_next <= pc_plus_4;
 
-   assign f_ir_o = ir;
    assign im_addr_o = pc_next;
-
 
    always@(posedge clk_i)
      if (rst_i)
        begin
+          //  PC = 0 at reset.
 	  pc <= 0;
 	  pc_plus_4 <= 4;
 
-	  ir <= 0;
+	  f_ir_o <= 0;
 	  f_valid_o <= 0;
 	  rst_d <= 0;
        end
@@ -79,16 +76,14 @@ module urv_fetch
 
 	  if (!f_stall_i)
             begin
-	       if(im_valid_i)
-	         pc_plus_4 <= (x_bra_i ? x_pc_bra_i : pc_plus_4) + 4;
-
 	       pc <= pc_next;
 
 	       f_pc_o <= pc;
 
 	       if(im_valid_i)
                  begin
-	            ir <= im_data_i;
+	            pc_plus_4 <= (x_bra_i ? x_pc_bra_i : pc_plus_4) + 4;
+	            f_ir_o <= im_data_i;
 	            f_valid_o <= (rst_d && !x_bra_i);
 	         end
                else

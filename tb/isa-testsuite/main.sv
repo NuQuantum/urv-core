@@ -55,8 +55,6 @@ module main;
 	   $stop;
 	end
 
-
-
       while(!$feof(f))
         begin
            int addr, data;
@@ -68,7 +66,6 @@ module main;
                 mem[addr % mem_size] = data;
              end
         end
-
    endtask // load_ram
 
    int seed;
@@ -77,14 +74,14 @@ module main;
 
    always@(posedge clk)
      begin
+        //  Read memory for insn
 	if(   $dist_uniform(seed, 0, 100 ) <= 100) begin
 	   im_data <= mem[(im_addr / 4) % mem_size];
 	   im_valid <= 1;
 	end else
 	   im_valid <= 0;
 
-
-
+        //  Write data memory
 	if(dm_write && dm_data_select[0])
 	  mem [(dm_addr / 4) % mem_size][7:0] <= dm_data_s[7:0];
 	if(dm_write && dm_data_select[1])
@@ -94,22 +91,10 @@ module main;
 	if(dm_write && dm_data_select[3])
 	  mem [(dm_addr / 4) % mem_size][31:24] <= dm_data_s[31:24];
 
-
-
-
-//	dm_data_l <= mem[(dm_addr/4) % mem_size];
-
-
-     end // always@ (posedge clk)
-
-
-
-   always@(posedge clk)
-     begin
-	dm_ready <= 1'b1; // $dist_uniform(seed, 0, 100 ) <= 50;
-
+        //  Read data memory
+        dm_ready <= 1'b1; // $dist_uniform(seed, 0, 100 ) <= 50;
 	dm_data_l <= mem[(dm_addr/4) % mem_size];
-   end
+     end // always@ (posedge clk)
 
    urv_cpu DUT
      (
