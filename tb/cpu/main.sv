@@ -358,7 +358,7 @@ module main;
 
 	    `OPC_OP:
 	      begin
-		 opc = "op-imm";
+		 opc = "op";
 		 fun = decode_op(DUT.d2x_fun);
 		 args = $sformatf("%-3s %-3s %-3s", rd, rs1, rs2);
 	      end
@@ -424,6 +424,8 @@ module main;
 
            default:
              begin
+		opc = "???";
+		fun = "";
                 args = $sformatf("opc: 0x%02x", DUT.d2x_opcode);
              end
 	  endcase // case (d2x_opcode)
