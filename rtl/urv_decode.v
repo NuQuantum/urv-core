@@ -38,7 +38,7 @@ module urv_decode
  input [31:0] 	   f_pc_i,
  input 		   f_valid_i,
 
- // to Register File
+ // to Register File (not registered: direct from fetch stage).
  output [4:0] 	   rf_rs1_o,
  output [4:0] 	   rf_rs2_o,
 
@@ -107,6 +107,7 @@ module urv_decode
    wire d_is_mul = (f_ir_i[25] && d_fun == `FUNC_MUL);
 
    // hazard detect combinatorial logic
+   // x_rd, x_is_shift, x_is_mul is from the previous instruction.
    always@*
      if ( x_valid && f_valid_i && ( (f_rs1 == x_rd)  || (f_rs2 == x_rd) ) && (!d_kill_i) )
        begin
@@ -114,8 +115,10 @@ module urv_decode
 	    `OPC_LOAD:
 	      load_hazard <= 1;
 	    `OPC_OP:
+              // 2 cycles instructions
 	      load_hazard <= x_is_shift | x_is_mul;
 	    `OPC_OP_IMM:
+              // 2 cycles instructions
 	      load_hazard <= x_is_shift;
 	    default:
 	      load_hazard <= 0;
@@ -126,17 +129,12 @@ module urv_decode
 
    reg 	inserting_nop;
 
-   // bubble insertion following a hazzard
+   // bubble insertion following a hazard (only 1 bubble).
    always@(posedge clk_i)
      if(rst_i)
        inserting_nop <= 0;
      else if (!d_stall_i)
-       begin
-	  if (inserting_nop)
-	    inserting_nop <= 0;
-	  else
-	    inserting_nop <= load_hazard;
-       end
+       inserting_nop <= load_hazard && !inserting_nop;
 
    assign d_stall_req_o = load_hazard && !inserting_nop;
 
@@ -269,8 +267,8 @@ module urv_decode
        begin
 	  x_is_shift <= d_is_shift;
 
-	  x_is_load_o <= ( d_opcode == `OPC_LOAD && !load_hazard) ? 1'b1 : 1'b0;
-	  x_is_store_o <= ( d_opcode == `OPC_STORE && !load_hazard) ? 1'b1 : 1'b0;
+	  x_is_load_o <= d_opcode == `OPC_LOAD && !load_hazard;
+	  x_is_store_o <= d_opcode == `OPC_STORE && !load_hazard;
 
 	  x_is_mul <= d_is_mul;
 

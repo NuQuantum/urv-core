@@ -25,67 +25,67 @@
 
 module urv_exec
   (
-   input 	     clk_i,
-   input 	     rst_i,
+   input             clk_i,
+   input             rst_i,
 
-   input 	     x_stall_i,
-   input 	     x_kill_i,
-   output reg 	     x_stall_req_o,
+   input             x_stall_i,
+   input             x_kill_i,
+   output reg        x_stall_req_o,
 
-
+   // From decode stage
    input [31:0]      d_pc_i,
-   input [4:0] 	     d_rd_i,
-   input [2:0] 	     d_fun_i,
+   input [4:0]       d_rd_i,
+   input [2:0]       d_fun_i,
 
-
+   // From register file
    input [31:0]      rf_rs1_value_i,
    input [31:0]      rf_rs2_value_i,
 
 
-   input 	     d_valid_i,
+   input             d_valid_i,
 
-   input [4:0] 	     d_opcode_i,
-   input 	     d_shifter_sign_i,
+   input [4:0]       d_opcode_i,
+   input             d_shifter_sign_i,
 
-   input 	     d_is_csr_i,
-   input 	     d_is_eret_i,
-   input [4:0] 	     d_csr_imm_i,
+   input             d_is_csr_i,
+   input             d_is_eret_i,
+   input [4:0]       d_csr_imm_i,
    input [11:0]      d_csr_sel_i,
 
    input [31:0]      d_imm_i,
-   input 	     d_is_signed_compare_i,
-   input 	     d_is_signed_alu_op_i,
-   input 	     d_is_add_i,
-   input 	     d_is_shift_i,
-   input 	     d_is_load_i,
-   input 	     d_is_store_i,
+   input             d_is_signed_compare_i,
+   input             d_is_signed_alu_op_i,
+   input             d_is_add_i,
+   input             d_is_shift_i,
+   input             d_is_load_i,
+   input             d_is_store_i,
   // input 	     d_is_divide_i,
-   input 	     d_is_undef_i,
+   input             d_is_undef_i,
 
    input [31:0]      d_alu_op1_i,
    input [31:0]      d_alu_op2_i,
 
-   input 	     d_use_op1_i,
-   input 	     d_use_op2_i,
+   input             d_use_op1_i,
+   input             d_use_op2_i,
 
 
-   input [2:0] 	     d_rd_source_i,
-   input 	     d_rd_write_i,
+   input [2:0]       d_rd_source_i,
+   input             d_rd_write_i,
 
    output reg [31:0] f_branch_target_o,
-   output 	     f_branch_take_o,
+   output            f_branch_take_o,
 
-   input 	     irq_i,
+   input             irq_i,
 
    // Writeback stage I/F
    output reg [2:0 ] w_fun_o,
-   output reg 	     w_load_o,
-   output reg 	     w_store_o,
+   output reg        w_load_o,
+   output reg        w_store_o,
 
-   output reg 	     w_valid_o,
+   output reg        w_valid_o,
    output reg [4:0]  w_rd_o,
    output reg [31:0] w_rd_value_o,
-   output reg 	     w_rd_write_o,
+   output reg        w_rd_write_o,
    output reg [31:0] w_dm_addr_o,
    output reg [1:0]  w_rd_source_o,
    output [31:0]     w_rd_shifter_o,
@@ -96,13 +96,13 @@ module urv_exec
    output [31:0]     dm_addr_o,
    output [31:0]     dm_data_s_o,
    output [3:0]      dm_data_select_o,
-   output 	     dm_store_o,
-   output 	     dm_load_o,
-   input 	     dm_ready_i,
+   output            dm_store_o,
+   output            dm_load_o,
+   input             dm_ready_i,
 
    input [39:0]      csr_time_i,
    input [39:0]      csr_cycles_i,
-   input 	     timer_tick_i
+   input             timer_tick_i
 
    );
 

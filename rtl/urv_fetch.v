@@ -57,6 +57,7 @@ module urv_fetch
      else
        pc_next <= pc_plus_4;
 
+   // Start fetching the next instruction
    assign im_addr_o = pc_next;
 
    always@(posedge clk_i)
@@ -68,6 +69,9 @@ module urv_fetch
 
 	  f_ir_o <= 0;
 	  f_valid_o <= 0;
+
+          //  The instruction won't be valid on the next cycle, as the
+          //  instruction memory is registered.
 	  rst_d <= 0;
        end
      else
@@ -76,8 +80,6 @@ module urv_fetch
 
 	  if (!f_stall_i)
             begin
-	       pc <= pc_next;
-
 	       f_pc_o <= pc;
 
 	       if(im_valid_i)
@@ -90,6 +92,8 @@ module urv_fetch
                  begin// if (i_valid_i)
 	            f_valid_o <= 0;
 	         end
+
+               pc <= pc_next;
 	    end
        end
 
