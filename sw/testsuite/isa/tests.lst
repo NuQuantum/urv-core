@@ -24,7 +24,7 @@ rv32ui-p-lw.ram
 #rv32ui-p-mulh.ram
 #rv32ui-p-mulhsu.ram
 #rv32ui-p-mulhu.ram
-#rv32ui-p-mul.ram
+rv32ui-p-mul.ram
 rv32ui-p-ori.ram
 rv32ui-p-or.ram
 #rv32ui-p-rem.ram
