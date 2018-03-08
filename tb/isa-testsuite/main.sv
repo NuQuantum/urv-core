@@ -165,6 +165,8 @@ module main;
 
       for (i=0;i<tests.size();i++)
 	begin
+           if (tests[i][0] == "#")
+             continue;
 	   rst = 1;
 	   repeat(3) @(posedge clk);
 	   $display("Loading %s", {test_dir,"/",tests[i]} );
@@ -178,8 +180,10 @@ module main;
 
 
 	end
-      end // initial begin
 
+        $display("End of tests");
+        $stop;
+      end // initial begin
 
 
    always@(posedge clk)
