@@ -149,7 +149,8 @@ module urv_decode
 	  x_pc_o <= 0;
 	  x_valid <= 0;
        end
-     else if(!d_stall_i) begin
+     else if(!d_stall_i)
+       begin
 	  x_pc_o <= f_pc_i;
 
 	  if (load_hazard && !inserting_nop)
@@ -317,13 +318,13 @@ module urv_decode
 
    // CSR/supervisor instructions
    always@(posedge clk_i)
-	if (!d_stall_i)
-	  begin
-	     x_csr_imm_o <= f_ir_i[19:15];
-	     x_csr_sel_o <= f_ir_i[31:20];
-	     x_is_csr_o <= (d_opcode == `OPC_SYSTEM) && (d_fun != 0);
-	     x_is_eret_o <= (d_opcode == `OPC_SYSTEM) && (d_fun == 0) && (f_ir_i [31:20] == 12'b000100000000);
-	  end
+     if (!d_stall_i)
+       begin
+	  x_csr_imm_o <= f_ir_i[19:15];
+	  x_csr_sel_o <= f_ir_i[31:20];
+	  x_is_csr_o <= (d_opcode == `OPC_SYSTEM) && (d_fun != 0);
+	  x_is_eret_o <= (d_opcode == `OPC_SYSTEM) && (d_fun == 0) && (f_ir_i [31:20] == 12'b000100000000);
+       end
 
    assign x_is_shift_o = x_is_shift;
    assign x_rd_write_o = x_rd_write;

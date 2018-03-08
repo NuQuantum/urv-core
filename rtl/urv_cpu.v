@@ -140,7 +140,6 @@ module urv_cpu
 
       // pipe control
       .f_stall_i(f_stall),
-      .f_kill_i(f_kill),
 
       // to D stage
       .f_valid_o(f2d_valid),
@@ -373,10 +372,5 @@ module urv_cpu
 
    assign x_kill = x2f_bra || x2f_bra_d0 || x2f_bra_d1;
    assign d_kill = x2f_bra || x2f_bra_d0;
-   assign f_kill = x2f_bra;
-   
+
 endmodule // urv_cpu
-
-   
-
-   
