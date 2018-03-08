@@ -100,15 +100,13 @@ module urv_decode
 
    reg 	      load_hazard;
 
-   // attempt to reuse ALU for jump address generation
-
    wire d_is_shift = (d_fun == `FUNC_SL || d_fun == `FUNC_SR) &&
 	(d_opcode == `OPC_OP || d_opcode == `OPC_OP_IMM );
 
    reg 	x_is_mul;
    wire d_is_mul = (f_ir_i[25] && d_fun == `FUNC_MUL);
 
-   // hazzard detect combinatorial logic
+   // hazard detect combinatorial logic
    always@*
      if ( x_valid && f_valid_i && ( (f_rs1 == x_rd)  || (f_rs2 == x_rd) ) && (!d_kill_i) )
        begin
@@ -122,7 +120,8 @@ module urv_decode
 	    default:
 	      load_hazard <= 0;
 	  endcase // case (x_opcode)
-       end else
+       end
+     else
 	 load_hazard <= 0;
 
    reg 	inserting_nop;
@@ -149,7 +148,8 @@ module urv_decode
        begin
 	  x_pc_o <= 0;
 	  x_valid <= 0;
-       end else if(!d_stall_i) begin
+       end
+     else if(!d_stall_i) begin
 	  x_pc_o <= f_pc_i;
 
 	  if (load_hazard && !inserting_nop)
@@ -166,6 +166,7 @@ module urv_decode
        end
 
    // ALU function decoding
+   // attempt to reuse ALU for jump address generation
    always@(posedge clk_i)
      if(!d_stall_i)
        case (d_opcode)
