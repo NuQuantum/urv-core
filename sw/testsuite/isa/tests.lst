@@ -31,7 +31,7 @@ rv32ui-p-or.ram
 #rv32ui-p-remu.ram
 rv32ui-p-sb.ram
 rv32ui-p-sh.ram
-#rv32ui-p-simple.ram
+rv32ui-p-simple.ram
 rv32ui-p-slli.ram
 rv32ui-p-sll.ram
 rv32ui-p-slti.ram
