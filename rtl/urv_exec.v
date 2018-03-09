@@ -114,8 +114,8 @@ module urv_exec
    reg [31:0] 	 alu_op1, alu_op2, alu_result;
    reg [31:0] 	 rd_value;
 
-   wire 	 exception_taken;
-
+   reg           x_exception;
+   reg [3:0]     x_exception_cause;
    reg 		 branch_take;
    reg 		 branch_condition_met;
 
@@ -135,7 +135,6 @@ module urv_exec
    wire [31:0] 	 rd_csr;
    wire [31:0] 	 rd_div;
 
-   wire 	 exception;
    wire [31:0] 	 csr_mie, csr_mip, csr_mepc, csr_mstatus,csr_mcause;
    wire [31:0] 	 csr_write_value;
    wire [31:0] 	 exception_address, exception_vector;
@@ -193,11 +192,10 @@ module urv_exec
       .exp_unaligned_store_i(1'b0),
       .exp_invalid_insn_i(d_is_undef_i && !x_stall_i && !x_kill_i && d_valid_i),
 
-      .x_exception_o(exception),
+      .x_exception_i(x_exception),
+      .x_exception_cause_i(x_exception_cause),
       .x_exception_pc_i(exception_pc),
       .x_exception_pc_o(exception_address),
-      .x_exception_vector_o(exception_vector),
-      .x_exception_taken_i(exception_taken),
 
       .csr_mstatus_o(csr_mstatus),
       .csr_mip_o(csr_mip),
@@ -227,8 +225,8 @@ module urv_exec
    always@*
      if (d_is_mret_i)
        branch_target <= exception_address;
-     else if (exception)
-       branch_target <= exception_vector;
+     else if (x_exception)
+       branch_target <= `URV_TRAP_VECTOR;
      else
        branch_target <= dm_addr;
 
@@ -356,6 +354,38 @@ module urv_exec
      endcase // case (d_fun_i)
 
 
+   // x_exception: exception due to execution
+   always@*
+     if (x_stall_i || x_kill_i || !d_valid_i)
+       begin
+          //  If the current instruction is not valid, there is no exception.
+          x_exception <= 0;
+          x_exception_cause <= 4'hx;
+       end
+     else if (d_is_undef_i)
+       begin
+          x_exception <= 1;
+          x_exception_cause <= `CAUSE_ILLEGAL_INSN;
+       end
+     else
+       case (d_opcode_i)
+         `OPC_LOAD:
+           begin
+              x_exception <= unaligned_addr;
+              x_exception_cause <= `CAUSE_UNALIGNED_LOAD;
+           end
+         `OPC_STORE:
+           begin
+              x_exception <= unaligned_addr;
+              x_exception_cause <= `CAUSE_UNALIGNED_STORE;
+           end
+         default:
+           begin
+              x_exception <= 0;
+              x_exception_cause <= 4'hx;
+           end
+       endcase
+
    // generate store value/select
    always@*
      case (d_fun_i)
@@ -392,7 +422,7 @@ module urv_exec
 
    //branch decision
    always@*
-     if( exception || d_is_mret_i)
+     if (x_exception)
        branch_take <= 1;
      else
        case (d_opcode_i)
@@ -400,6 +430,8 @@ module urv_exec
 	   branch_take <= 1;
 	 `OPC_BRANCH:
 	   branch_take <= branch_condition_met;
+         `OPC_SYSTEM:
+           branch_take <= d_is_mret_i;
 	 default:
 	   branch_take <= 0;
        endcase // case (d_opcode_i)
@@ -411,8 +443,8 @@ module urv_exec
    assign dm_data_s_o = dm_data_s;
    assign dm_data_select_o = dm_select_s;
 
-   assign dm_load_o =  d_is_load_i & d_valid_i & !x_kill_i & !x_stall_i & !exception;
-   assign dm_store_o = d_is_store_i & d_valid_i & !x_kill_i & !x_stall_i & !exception;
+   assign dm_load_o =  d_is_load_i & d_valid_i & !x_kill_i & !x_stall_i & !x_exception;
+   assign dm_store_o = d_is_store_i & d_valid_i & !x_kill_i & !x_stall_i & !x_exception;
 
 
    // X/W pipeline registers
@@ -428,25 +460,24 @@ module urv_exec
      else if (!x_stall_i)
        begin
 	  f_branch_target_o <= branch_target;
-	  f_branch_take <= branch_take && !x_kill_i && (d_valid_i || exception);
+	  f_branch_take <= branch_take && !x_kill_i && d_valid_i;
 	  w_rd_o <= d_rd_i;
 	  w_rd_value_o <= rd_value;
 
-	  w_rd_write_o <= d_rd_write_i && !x_kill_i && d_valid_i && !exception;
-	  w_load_o <= d_is_load_i && !x_kill_i && d_valid_i && !exception;
-	  w_store_o <= d_is_store_i && !x_kill_i && d_valid_i && !exception;
+	  w_rd_write_o <= d_rd_write_i && !x_kill_i && d_valid_i && !x_exception;
+	  w_load_o <= d_is_load_i && !x_kill_i && d_valid_i && !x_exception;
+	  w_store_o <= d_is_store_i && !x_kill_i && d_valid_i && !x_exception;
 
 	  w_rd_source_o <= d_rd_source_i;
 	  w_fun_o <= d_fun_i;
 	  w_dm_addr_o <= dm_addr;
-	  w_valid_o <= !exception;
+	  w_valid_o <= !x_exception;
        end
 
    always@*
      exception_pc <= d_pc_i;
 
    assign f_branch_take_o = f_branch_take;
-   assign exception_taken = exception && (branch_take && !x_kill_i && (d_valid_i || exception));
 
    // pipeline control: generate stall request signal
    always@*
