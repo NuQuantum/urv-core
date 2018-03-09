@@ -1,5 +1,3 @@
-include_dirs=["."]
-
 files = [ "urv_cpu.v",
           "urv_exec.v",
           "urv_fetch.v",
