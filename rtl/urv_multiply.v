@@ -85,6 +85,11 @@ module urv_mult18x18
 		   .RSTP(1'b0)
 		   );
 
+   /// Silence Xilinx unisim DSP48A1 warnings about invalid OPMODE
+   // synthesis translate_off
+   initial force D1.OPMODE_dly = 8'd1;
+   // synthesis translate_on
+
 endmodule // urv_mult18x18
 `endif //  `ifdef PLATFORM_SPARTAN6
 
