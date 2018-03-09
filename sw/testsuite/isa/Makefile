@@ -23,13 +23,16 @@ default: all
 RISCV_PREFIX=riscv32-elf-
 RISCV_GCC = $(RISCV_PREFIX)gcc
 ENTROPY = -DENTROPY=$(shell echo $$$$)
-RISCV_GCC_OPTS = $(ENTROPY) -mcmodel=medany -nostartfiles -fvisibility=hidden -Wa,-march=rv32im -DSIM -I../../common
+RISCV_GCC_OPTS = $(ENTROPY) -mcmodel=medany -nostartfiles -fvisibility=hidden -march=rv32im -mabi=ilp32 -DSIM -I../../common
 RISCV_OBJDUMP = $(RISCV_PREFIX)objdump --disassemble-all --disassemble-zeroes --section=.text --section=.text.startup --section=.text.init --section=.data
 RISCV_SIM = spike --extension=hwacha
 
-COMMON_SRCS = ../../common/crt0.S ../../common/irq.S ../../common/emulate.c ../../common/test-common.c ../../common/printf.c ../../common/uart.c ../../common/vsprintf-xint.c
+COMMON_SRCS = ../../common/crt0.S ../../common/irq.S emulate.o ../../common/test-common.c ../../common/printf.c ../../common/uart.c ../../common/vsprintf-xint.c
 
 vpath %.S $(isa_src_dir)
+
+emulate.o: ../../common/emulate.c
+	$(RISCV_GCC) -c $(RISCV_GCC_OPTS) -mabi=ilp32 -march=rv32i -o $@ $<
 
 #------------------------------------------------------------
 # Build assembly tests
@@ -49,7 +52,7 @@ vpath %.S $(isa_src_dir)
 
 define compile_template
 
-$$($(1)_p_tests): $(1)-p-%: $(1)/%.S
+$$($(1)_p_tests): $(1)-p-%: $(1)/%.S emulate.o
 	$$(RISCV_GCC) $(2) $$(RISCV_GCC_OPTS) -I$(isa_src_dir)/../env/p -I$(isa_src_dir)/macros/scalar $(COMMON_SRCS) -T ../../common/ram2.ld  $$< -o $$@
 $(1)_tests += $$($(1)_p_tests)
 

@@ -105,7 +105,7 @@ module urv_cpu
    wire 	 d2x_rd_write;
    wire [11:0] 	 d2x_csr_sel;
    wire [4:0] 	 d2x_csr_imm;
-   wire 	 d2x_is_csr, d2x_is_eret, d2x_csr_load_en;
+   wire 	 d2x_is_csr, d2x_is_mret, d2x_csr_load_en;
    wire [31:0] 	 d2x_alu_op1, d2x_alu_op2;
    wire  	 d2x_use_op1, d2x_use_op2;
 
@@ -196,7 +196,7 @@ module urv_cpu
       .x_csr_sel_o (d2x_csr_sel),
       .x_csr_imm_o (d2x_csr_imm),
       .x_is_csr_o (d2x_is_csr),
-      .x_is_eret_o (d2x_is_eret),
+      .x_is_mret_o (d2x_is_mret),
       .x_alu_op1_o(d2x_alu_op1),
       .x_alu_op2_o(d2x_alu_op2),
       .x_use_op1_o(d2x_use_op1),
@@ -247,9 +247,9 @@ module urv_cpu
 
       // from D stage
       .d_valid_i(d2x_valid),
-      .d_is_csr_i ( d2x_is_csr ),
-      .d_is_eret_i ( d2x_is_eret ),
-      .d_csr_imm_i ( d2x_csr_imm ),
+      .d_is_csr_i (d2x_is_csr),
+      .d_is_mret_i (d2x_is_mret),
+      .d_csr_imm_i (d2x_csr_imm),
       .d_csr_sel_i (d2x_csr_sel),
       .d_pc_i(d2x_pc),
       .d_rd_i(d2x_rd),

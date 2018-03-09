@@ -48,7 +48,7 @@ module urv_exec
    input             d_shifter_sign_i,
 
    input             d_is_csr_i,
-   input             d_is_eret_i,
+   input             d_is_mret_i,
    input [4:0]       d_csr_imm_i,
    input [11:0]      d_csr_sel_i,
 
@@ -180,7 +180,7 @@ module urv_exec
       .x_kill_i (x_kill_i),
 
       .d_is_csr_i(d_is_csr_i),
-      .d_is_eret_i (d_is_eret_i),
+      .d_is_mret_i (d_is_mret_i),
       .d_fun_i(d_fun_i),
       .d_csr_imm_i(d_csr_imm_i),
       .d_csr_sel_i(d_csr_sel_i),
@@ -225,9 +225,9 @@ module urv_exec
 
    // calculate branch target address
    always@*
-     if(d_is_eret_i )
+     if (d_is_mret_i)
        branch_target <= exception_address;
-     else if ( exception )
+     else if (exception)
        branch_target <= exception_vector;
      else
        branch_target <= dm_addr;
@@ -340,62 +340,59 @@ module urv_exec
    reg unaligned_addr;
 
    always@*
-	case (d_fun_i)
-	  `LDST_B,
-	  `LDST_BU:
-	    unaligned_addr <= 0;
+     case (d_fun_i)
+       `LDST_B,
+       `LDST_BU:
+	 unaligned_addr <= 0;
 
-	  `LDST_H,
-	    `LDST_HU:
-	    unaligned_addr <= (dm_addr[0]);
+       `LDST_H,
+       `LDST_HU:
+	 unaligned_addr <= (dm_addr[0]);
 
-	  `LDST_L:
-	    unaligned_addr <= (dm_addr[1:0] != 2'b00);
-	  default:
-	    unaligned_addr <= 0;
-
-	endcase // case (d_fun_i)
+       `LDST_L:
+	 unaligned_addr <= (dm_addr[1:0] != 2'b00);
+       default:
+	 unaligned_addr <= 0;
+     endcase // case (d_fun_i)
 
 
    // generate store value/select
    always@*
-     begin
-	case (d_fun_i)
-	  `LDST_B:
-	    begin
-	       dm_data_s <= { rs2[7:0], rs2[7:0], rs2[7:0], rs2[7:0] };
-	       dm_select_s[0] <= (dm_addr [1:0] == 2'b00);
-	       dm_select_s[1] <= (dm_addr [1:0] == 2'b01);
-	       dm_select_s[2] <= (dm_addr [1:0] == 2'b10);
-	       dm_select_s[3] <= (dm_addr [1:0] == 2'b11);
-	    end
+     case (d_fun_i)
+       `LDST_B:
+	 begin
+	    dm_data_s <= { rs2[7:0], rs2[7:0], rs2[7:0], rs2[7:0] };
+	    dm_select_s[0] <= (dm_addr [1:0] == 2'b00);
+	    dm_select_s[1] <= (dm_addr [1:0] == 2'b01);
+	    dm_select_s[2] <= (dm_addr [1:0] == 2'b10);
+	    dm_select_s[3] <= (dm_addr [1:0] == 2'b11);
+	 end
 
-	  `LDST_H:
-	    begin
-	       dm_data_s <= { rs2[15:0], rs2[15:0] };
-	       dm_select_s[0] <= (dm_addr [1] == 1'b0);
-	       dm_select_s[1] <= (dm_addr [1] == 1'b0);
-	       dm_select_s[2] <= (dm_addr [1] == 1'b1);
-	       dm_select_s[3] <= (dm_addr [1] == 1'b1);
-	    end
+       `LDST_H:
+	 begin
+	    dm_data_s <= { rs2[15:0], rs2[15:0] };
+	    dm_select_s[0] <= (dm_addr [1] == 1'b0);
+	    dm_select_s[1] <= (dm_addr [1] == 1'b0);
+	    dm_select_s[2] <= (dm_addr [1] == 1'b1);
+	    dm_select_s[3] <= (dm_addr [1] == 1'b1);
+	 end
 
-	  `LDST_L:
-	    begin
-	       dm_data_s <= rs2;
-	       dm_select_s <= 4'b1111;
-	    end
+       `LDST_L:
+	 begin
+	    dm_data_s <= rs2;
+	    dm_select_s <= 4'b1111;
+	 end
 
-	  default:
-	    begin
-	       dm_data_s <= 32'hx;
-	       dm_select_s <= 4'hx;
-	    end
-	endcase // case (d_fun_i)
-     end
+       default:
+	 begin
+	    dm_data_s <= 32'hx;
+	    dm_select_s <= 4'hx;
+	 end
+     endcase // case (d_fun_i)
 
    //branch decision
    always@*
-     if( exception || d_is_eret_i)
+     if( exception || d_is_mret_i)
        branch_take <= 1;
      else
        case (d_opcode_i)
@@ -420,27 +417,30 @@ module urv_exec
 
    // X/W pipeline registers
    always@(posedge clk_i)
-     if (rst_i) begin
-	f_branch_take   <= 0;
-	w_load_o <= 0;
-	w_store_o <= 0;
-	w_valid_o <= 0;
+     if (rst_i)
+       begin
+	  f_branch_take   <= 0;
+	  w_load_o <= 0;
+	  w_store_o <= 0;
+	  w_valid_o <= 0;
 
-     end else if (!x_stall_i) begin
-	f_branch_target_o <= branch_target;
-	f_branch_take <= branch_take && !x_kill_i && (d_valid_i || exception);
-	w_rd_o <= d_rd_i;
-	w_rd_value_o <= rd_value;
+       end
+     else if (!x_stall_i)
+       begin
+	  f_branch_target_o <= branch_target;
+	  f_branch_take <= branch_take && !x_kill_i && (d_valid_i || exception);
+	  w_rd_o <= d_rd_i;
+	  w_rd_value_o <= rd_value;
 
-	w_rd_write_o <= d_rd_write_i && !x_kill_i && d_valid_i && !exception;
-	w_load_o <= d_is_load_i && !x_kill_i && d_valid_i && !exception;
-	w_store_o <= d_is_store_i && !x_kill_i && d_valid_i && !exception;
+	  w_rd_write_o <= d_rd_write_i && !x_kill_i && d_valid_i && !exception;
+	  w_load_o <= d_is_load_i && !x_kill_i && d_valid_i && !exception;
+	  w_store_o <= d_is_store_i && !x_kill_i && d_valid_i && !exception;
 
-	w_rd_source_o <= d_rd_source_i;
-	w_fun_o <= d_fun_i;
-	w_dm_addr_o <= dm_addr;
-	w_valid_o <= !exception;
-     end // else: !if(rst_i)
+	  w_rd_source_o <= d_rd_source_i;
+	  w_fun_o <= d_fun_i;
+	  w_dm_addr_o <= dm_addr;
+	  w_valid_o <= !exception;
+       end
 
    always@*
      exception_pc <= d_pc_i;
@@ -460,6 +460,4 @@ module urv_exec
        x_stall_req_o <= 1;
      else
        x_stall_req_o <= 0;
-
-
 endmodule // urv_exec

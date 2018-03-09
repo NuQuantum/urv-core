@@ -65,7 +65,7 @@ module urv_decode
  output reg [11:0] x_csr_sel_o,
  output reg [4:0]  x_csr_imm_o,
  output reg 	   x_is_csr_o,
- output reg 	   x_is_eret_o,
+ output reg 	   x_is_mret_o,
  output reg [31:0] x_imm_o,
  output reg [31:0] x_alu_op1_o,
  output reg [31:0] x_alu_op2_o,
@@ -321,7 +321,7 @@ module urv_decode
 	  x_csr_imm_o <= f_ir_i[19:15];
 	  x_csr_sel_o <= f_ir_i[31:20];
 	  x_is_csr_o <= (d_opcode == `OPC_SYSTEM) && (d_fun != 0);
-	  x_is_eret_o <= (d_opcode == `OPC_SYSTEM) && (d_fun == 0) && (f_ir_i [31:20] == 12'b000100000000);
+	  x_is_mret_o <= (d_opcode == `OPC_SYSTEM) && (d_fun == 0) && (f_ir_i [31:20] == 12'b0011000_00010);
        end
 
    assign x_is_shift_o = x_is_shift;
