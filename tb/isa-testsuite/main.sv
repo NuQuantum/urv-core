@@ -18,33 +18,37 @@
  
 */
 
-`include "rv_defs.v"
+`define URV_PLATFORM_SPARTAN6
+`include "urv_defs.v"
 
 `timescale 1ns/1ps
 
-module main;
+  module main;
 
    
    reg clk = 0;
    reg rst = 1;
    
    wire [31:0] im_addr;
-   reg [31:0] im_data;
-   reg        im_valid;
+   reg [31:0]  im_data;
+   reg 	       im_valid;
    
 
    wire [31:0] dm_addr;
    wire [31:0] dm_data_s;
-   reg [31:0] dm_data_l;
+   reg [31:0]  dm_data_l;
    wire [3:0]  dm_data_select;
    wire        dm_write;
    reg 	       dm_valid_l = 1;
-   reg        dm_ready;
+   reg 	       dm_ready;
+
+   wire        irq = 0;
    
    localparam int mem_size = 16384;
    
    reg [31:0]  mem[0:mem_size - 1];
 
+   // loads memory contents from a text file
    task automatic load_ram(string filename);
       int f = $fopen(filename,"r");
       int     n, i;
@@ -54,8 +58,6 @@ module main;
 	   $error("can't open: %s", filename);
 	   $stop;
 	end
-      
-      
       
       while(!$feof(f))
         begin
@@ -73,8 +75,7 @@ module main;
 
    int seed;
 
-
-   
+   // instruction and data memories   
    always@(posedge clk)
      begin
 	if(   $dist_uniform(seed, 0, 100 ) <= 100) begin
@@ -82,8 +83,6 @@ module main;
 	   im_valid <= 1;
 	end else
 	   im_valid <= 0;
-	
-	
 
 	if(dm_write && dm_data_select[0])
 	  mem [(dm_addr / 4) % mem_size][7:0] <= dm_data_s[7:0];
@@ -94,24 +93,17 @@ module main;
 	if(dm_write && dm_data_select[3])
 	  mem [(dm_addr / 4) % mem_size][31:24] <= dm_data_s[31:24];
 	
-
-	
-	
-//	dm_data_l <= mem[(dm_addr/4) % mem_size];
-	
-	
      end // always@ (posedge clk)
 
 
-   
+
    always@(posedge clk)
      begin
 	dm_ready <= 1'b1; // $dist_uniform(seed, 0, 100 ) <= 50;
-
 	dm_data_l <= mem[(dm_addr/4) % mem_size];
-   end	   
+     end	   
 
-   rv_cpu DUT
+   urv_cpu DUT
      (
       .clk_i(clk),
       .rst_i(rst),
@@ -145,7 +137,7 @@ module main;
       string tests[$];
       string test_dir = "../../sw/testsuite/isa";
       
-      
+      // load all tests listed in the file   
       int f = $fopen( {test_dir,"/tests.lst"} ,"r");
       int     n, i;
 
@@ -157,8 +149,6 @@ module main;
            
            $fscanf(f,"%s", fname);
 	   tests.push_back(fname);
-	   
-	   
         end
 
 
@@ -180,21 +170,20 @@ module main;
       end // initial begin
 		    
 
-   
+
+   // report test completeness/status. The test applets indicate this by writing predefined
+   // memory locations.
    always@(posedge clk)
      if(dm_write)
        begin
 	  if(dm_addr == 'h100000)
 	    begin
-	      // $display("\n ****** TX '%c' \n", dm_data_s[7:0]) ;
-	       //	  $fwrite(f_exec_log,"\n ****** TX '%c' \n", dm_data_s[7:0]) ;
 	       $write("%c", dm_data_s[7:0]);
 	       $fwrite(f_console,"%c", dm_data_s[7:0]);
 	       $fflush(f_console);
 	    end
 	  else if(dm_addr == 'h100004)
 	    begin
-//	       $display("Test complete." );
 	       test_complete = 1;
 	    end
        end

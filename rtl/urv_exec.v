@@ -44,8 +44,6 @@ module urv_exec
 
    input 	     d_valid_i,
 
-   input 	     d_load_hazard_i,
-   
    input [4:0] 	     d_opcode_i,
    input 	     d_shifter_sign_i,
 
@@ -76,8 +74,6 @@ module urv_exec
    
    output reg [31:0] f_branch_target_o,
    output 	     f_branch_take_o,
-
-   output 	     w_load_hazard_o,
 
    input 	     irq_i,
    
@@ -436,9 +432,9 @@ module urv_exec
 	w_rd_o <= d_rd_i;
 	w_rd_value_o <= rd_value;
 
-	w_rd_write_o <= d_rd_write_i && !x_kill_i && d_valid_i && !exception;
-	w_load_o <= d_is_load_i && !x_kill_i && d_valid_i && !exception;
-	w_store_o <= d_is_store_i && !x_kill_i && d_valid_i && !exception;
+	w_rd_write_o <= d_rd_write_i && !x_kill_i && d_valid_i && !exception && !d_is_undef_i;
+	w_load_o <= d_is_load_i && !x_kill_i && d_valid_i && !exception && !d_is_undef_i;
+	w_store_o <= d_is_store_i && !x_kill_i && d_valid_i && !exception && !d_is_undef_i;
 
 	w_rd_source_o <= d_rd_source_i;
 	w_fun_o <= d_fun_i;

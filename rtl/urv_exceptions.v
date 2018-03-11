@@ -74,6 +74,9 @@ module urv_exceptions
    reg [5:0] 	 except_vec_masked;
    reg exception_pending;
 
+   reg [31:0] x_exception_pc_d;
+   
+
    assign csr_mcause_o = {28'h0, csr_mcause};
    assign csr_mepc_o = csr_mepc;
    assign csr_mie_o = csr_mie;
@@ -157,11 +160,14 @@ module urv_exceptions
 	  exception_pending <= 0;
 	  
        end else if(!x_stall_i && !x_kill_i) begin
+
+	  x_exception_pc_d <= x_exception_pc_i;
+	  
 	  if ( d_is_eret_i )
 	    exception_pending <= 0;
           else if ( x_exception_taken_i )
 	    begin
-	       csr_mepc <= x_exception_pc_i;
+	       csr_mepc <= x_exception_pc_d;
 	       csr_mcause <= cause;
 	       exception_pending <= 1;
 	    end 
