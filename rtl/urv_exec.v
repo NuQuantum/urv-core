@@ -49,6 +49,7 @@ module urv_exec
 
    input             d_is_csr_i,
    input             d_is_mret_i,
+   input             d_is_ebreak_i,
    input [4:0]       d_csr_imm_i,
    input [11:0]      d_csr_sel_i,
 
@@ -74,6 +75,7 @@ module urv_exec
 
    output reg [31:0] f_branch_target_o,
    output            f_branch_take_o,
+   output reg        f_dbg_toggle_o,
 
    input             irq_i,
 
@@ -452,7 +454,8 @@ module urv_exec
      if (rst_i)
        begin
 	  f_branch_take   <= 0;
-	  w_load_o <= 0;
+          f_dbg_toggle_o <= 0;
+          w_load_o <= 0;
 	  w_store_o <= 0;
 	  w_valid_o <= 0;
 
@@ -461,7 +464,8 @@ module urv_exec
        begin
 	  f_branch_target_o <= branch_target;
 	  f_branch_take <= branch_take && !x_kill_i && d_valid_i;
-	  w_rd_o <= d_rd_i;
+          f_dbg_toggle_o <= d_is_ebreak_i && !x_kill_i && d_valid_i;
+          w_rd_o <= d_rd_i;
 	  w_rd_value_o <= rd_value;
 
 	  w_rd_write_o <= d_rd_write_i && !x_kill_i && d_valid_i && !x_exception;

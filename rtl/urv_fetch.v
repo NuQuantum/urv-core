@@ -40,7 +40,14 @@ module urv_fetch
 
  //  Branch control
  input [31:0]      x_pc_bra_i,
- input             x_bra_i
+ input             x_bra_i,
+
+ //  Debug mode
+ input             dbg_force_i,
+ output            dbg_enabled_o,
+ input [31:0]      dbg_insn_i,
+ output reg        dbg_insn_ready_o,
+ input             x_dbg_toggle
 );
 
    reg [31:0] pc;
@@ -48,6 +55,8 @@ module urv_fetch
 
    reg [31:0]  pc_next;
    reg [31:0]  pc_plus_4;
+   reg         dbg_mode;
+   reg [2:0]   pipeline_cnt;
 
    always@*
      if( x_bra_i )
@@ -60,6 +69,8 @@ module urv_fetch
    // Start fetching the next instruction
    assign im_addr_o = pc_next;
 
+   assign dbg_enabled_o = dbg_mode;
+
    always@(posedge clk_i)
      if (rst_i)
        begin
@@ -69,6 +80,12 @@ module urv_fetch
 
 	  f_ir_o <= 0;
 	  f_valid_o <= 0;
+
+          //  Allow to start in debug mode.
+          dbg_mode <= dbg_force_i;
+          dbg_insn_ready_o <= dbg_force_i;
+
+          pipeline_cnt <= 0;
 
           //  The instruction won't be valid on the next cycle, as the
           //  instruction memory is registered.
@@ -82,7 +99,40 @@ module urv_fetch
             begin
 	       f_pc_o <= pc;
 
-	       if(im_valid_i)
+               if((dbg_force_i || x_dbg_toggle) && !dbg_mode)
+                 begin
+                    //  Try to enter in debug mode.
+                    f_valid_o <= 0;
+                    if (pipeline_cnt == 5)
+                      dbg_mode <= 1;
+                    else
+                      pipeline_cnt <= pipeline_cnt + 1;
+                 end
+               else if(dbg_mode)
+                 begin
+                    //  Default: insn not valid
+                    f_valid_o <= 0;
+
+                    if (x_dbg_toggle)
+                      begin
+                         //  Leave debug mode
+                         dbg_mode <= 0;
+                         pipeline_cnt <= 0;
+                         // dbg_insn_ready_o must be 0.
+                      end
+                    else if (dbg_insn_ready_o)
+                      begin
+                         f_ir_o <= dbg_insn_i;
+                         f_valid_o <= 1;
+                         dbg_insn_ready_o <= 0;
+                         pipeline_cnt <= 0;
+                      end
+                    else if (pipeline_cnt == 5)
+                      dbg_insn_ready_o <= 1;
+                    else
+                      pipeline_cnt <= pipeline_cnt + 1;
+                 end
+               else if(im_valid_i)
                  begin
 	            pc_plus_4 <= (x_bra_i ? x_pc_bra_i : pc_plus_4) + 4;
 	            f_ir_o <= im_data_i;

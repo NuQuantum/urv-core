@@ -137,7 +137,13 @@ module main;
       .dm_load_o(),
       .dm_store_done_i(1'b1),
       .dm_load_done_i(1'b1),
-      .dm_ready_i(dm_ready)
+      .dm_ready_i(dm_ready),
+
+      // Debug
+      .dbg_force_i(0),
+      .dbg_enabled_o(),
+      .dbg_insn_i(0),
+      .dbg_insn_ready_o()
       );
 
    always #5ns clk <= ~clk;

@@ -25,52 +25,53 @@
 
 module urv_decode
 (
- input 		   clk_i,
- input 		   rst_i,
+ input             clk_i,
+ input             rst_i,
 
  // pipeline control
- input 		   d_stall_i,
- input 		   d_kill_i,
- output 	   d_stall_req_o,
+ input             d_stall_i,
+ input             d_kill_i,
+ output            d_stall_req_o,
 
  // from Fetch stage
- input [31:0] 	   f_ir_i,
- input [31:0] 	   f_pc_i,
- input 		   f_valid_i,
+ input [31:0]      f_ir_i,
+ input [31:0]      f_pc_i,
+ input             f_valid_i,
 
  // to Register File (not registered: direct from fetch stage).
- output [4:0] 	   rf_rs1_o,
- output [4:0] 	   rf_rs2_o,
+ output [4:0]      rf_rs1_o,
+ output [4:0]      rf_rs2_o,
 
  // to Execute 1 stage
- output 	   x_valid_o,
+ output            x_valid_o,
  output reg [31:0] x_pc_o,
 
- output [4:0] 	   x_rs1_o,
- output [4:0] 	   x_rs2_o,
- output [4:0] 	   x_rd_o,
+ output [4:0]      x_rs1_o,
+ output [4:0]      x_rs2_o,
+ output [4:0]      x_rd_o,
  output reg [4:0]  x_shamt_o,
  output reg [2:0]  x_fun_o,
- output [4:0] 	   x_opcode_o,
- output reg 	   x_shifter_sign_o,
- output reg 	   x_is_signed_compare_o,
- output reg 	   x_is_signed_alu_op_o,
- output reg 	   x_is_add_o,
- output 	   x_is_shift_o,
- output reg 	   x_is_load_o,
- output reg 	   x_is_store_o,
- output reg 	   x_is_undef_o,
+ output [4:0]      x_opcode_o,
+ output reg        x_shifter_sign_o,
+ output reg        x_is_signed_compare_o,
+ output reg        x_is_signed_alu_op_o,
+ output reg        x_is_add_o,
+ output            x_is_shift_o,
+ output reg        x_is_load_o,
+ output reg        x_is_store_o,
+ output reg        x_is_undef_o,
  output reg [2:0]  x_rd_source_o,
- output 	   x_rd_write_o,
+ output            x_rd_write_o,
  output reg [11:0] x_csr_sel_o,
  output reg [4:0]  x_csr_imm_o,
- output reg 	   x_is_csr_o,
- output reg 	   x_is_mret_o,
+ output reg        x_is_csr_o,
+ output reg        x_is_mret_o,
+ output reg        x_is_ebreak_o,
  output reg [31:0] x_imm_o,
  output reg [31:0] x_alu_op1_o,
  output reg [31:0] x_alu_op2_o,
- output reg 	   x_use_op1_o,
- output reg 	   x_use_op2_o
+ output reg        x_use_op1_o,
+ output reg        x_use_op2_o
 );
 
    wire [4:0] f_rs1 = f_ir_i[19:15];
@@ -142,7 +143,7 @@ module urv_decode
    assign x_valid_o = x_valid;
 
    always@(posedge clk_i)
-     if(rst_i || d_kill_i )
+     if(rst_i || d_kill_i)
        begin
 	  x_pc_o <= 0;
 	  x_valid <= 0;
@@ -179,7 +180,7 @@ module urv_decode
      if(!d_stall_i)
        x_shifter_sign_o <= f_ir_i[30];
 
-   wire[31:0] d_imm_i = { {21{ f_ir_i[31] }}, f_ir_i[30:25], f_ir_i[24:21], f_ir_i[20] };
+   wire [31:0] d_imm_i = { {21{ f_ir_i[31] }}, f_ir_i[30:25], f_ir_i[24:21], f_ir_i[20] };
    wire [31:0] d_imm_s = { {21{ f_ir_i[31] }}, f_ir_i[30:25], f_ir_i[11:8], f_ir_i[7] };
    wire [31:0] d_imm_b = { {20{ f_ir_i[31] }}, f_ir_i[7], f_ir_i[30:25], f_ir_i[11:8], 1'b0 };
    wire [31:0] d_imm_u = { f_ir_i[31], f_ir_i[30:20], f_ir_i[19:12], 12'h000 };
@@ -322,6 +323,7 @@ module urv_decode
 	  x_csr_sel_o <= f_ir_i[31:20];
 	  x_is_csr_o <= (d_opcode == `OPC_SYSTEM) && (d_fun != 0);
 	  x_is_mret_o <= (d_opcode == `OPC_SYSTEM) && (d_fun == 0) && (f_ir_i [31:20] == 12'b0011000_00010);
+          x_is_ebreak_o <= (d_opcode == `OPC_SYSTEM) && (d_fun == 0) && (f_ir_i [31:20] == 12'b0000000_00001);
        end
 
    assign x_is_shift_o = x_is_shift;

@@ -32,27 +32,42 @@ module urv_cpu
     parameter g_debug_breakpoints = 6
    )
    (
-   input 	 clk_i,
-   input 	 rst_i,
+   input         clk_i,
+   input         rst_i,
 
-   input 	 irq_i,
+   input         irq_i,
 
    // instruction mem I/F
    output [31:0] im_addr_o,
    input [31:0]  im_data_i,
-   input 	 im_valid_i,
+   input         im_valid_i,
 
    // data mem I/F
    output [31:0] dm_addr_o,
    output [31:0] dm_data_s_o,
    input [31:0]  dm_data_l_i,
    output [3:0]  dm_data_select_o,
-   input 	 dm_ready_i,
+   input         dm_ready_i,
 
-   output 	 dm_store_o,
-   output 	 dm_load_o,
-   input 	 dm_load_done_i,
-   input 	 dm_store_done_i
+   output        dm_store_o,
+   output        dm_load_o,
+   input         dm_load_done_i,
+   input         dm_store_done_i,
+
+   // Debug I/F
+   // Debug mode is entered either when dbg_force_i is set, or when the ebreak
+   // instructions is executed.  Debug mode is left when the ebreak instruction
+   // is executed (from the dbg_insn_i port).
+   // When debug mode is entered, dbg_enabled_o is set.  This may not be
+   // immediate.  Interrupts are disabled in debug mode.
+   // In debug mode, instructions are executed from dbg_insn_i.  An instruction
+   // is fetched when dbg_insn_read_o is set.  As instructions are always
+   // fetched, they must be always valid.  Use a nop (0x19) if nothing should
+   // be executed.
+   input         dbg_force_i,
+   output        dbg_enabled_o,
+   input [31:0]  dbg_insn_i,
+   output        dbg_insn_ready_o
    );
 
 
@@ -71,6 +86,7 @@ module urv_cpu
    // X1->F stage interface
    wire [31:0] 	 x2f_pc_bra;
    wire 	 x2f_bra;
+   wire          x2f_dbg_toggle;
 
    // F->D stage interface
    wire [31:0] 	 f2d_pc, f2d_ir;
@@ -105,7 +121,7 @@ module urv_cpu
    wire 	 d2x_rd_write;
    wire [11:0] 	 d2x_csr_sel;
    wire [4:0] 	 d2x_csr_imm;
-   wire 	 d2x_is_csr, d2x_is_mret, d2x_csr_load_en;
+   wire 	 d2x_is_csr, d2x_is_mret, d2x_is_ebreak, d2x_csr_load_en;
    wire [31:0] 	 d2x_alu_op1, d2x_alu_op2;
    wire  	 d2x_use_op1, d2x_use_op2;
 
@@ -150,7 +166,13 @@ module urv_cpu
 
       // from X1 stage (jumps)
       .x_pc_bra_i(x2f_pc_bra),
-      .x_bra_i(x2f_bra)
+      .x_bra_i(x2f_bra),
+
+      .dbg_force_i(dbg_force_i),
+      .dbg_enabled_o(dbg_enabled_o),
+      .dbg_insn_i(dbg_insn_i),
+      .dbg_insn_ready_o(dbg_insn_ready_o),
+      .x_dbg_toggle(x_dbg_toggle)
       );
 
 
@@ -197,6 +219,7 @@ module urv_cpu
       .x_csr_imm_o (d2x_csr_imm),
       .x_is_csr_o (d2x_is_csr),
       .x_is_mret_o (d2x_is_mret),
+      .x_is_ebreak_o (d2x_is_ebreak),
       .x_alu_op1_o(d2x_alu_op1),
       .x_alu_op2_o(d2x_alu_op2),
       .x_use_op1_o(d2x_use_op1),
@@ -249,6 +272,7 @@ module urv_cpu
       .d_valid_i(d2x_valid),
       .d_is_csr_i (d2x_is_csr),
       .d_is_mret_i (d2x_is_mret),
+      .d_is_ebreak_i (d2x_is_ebreak),
       .d_csr_imm_i (d2x_csr_imm),
       .d_csr_sel_i (d2x_csr_sel),
       .d_pc_i(d2x_pc),
@@ -273,8 +297,9 @@ module urv_cpu
       .d_shifter_sign_i(d2x_shifter_sign),
 
       // to F stage (branches)
-      .f_branch_target_o (x2f_pc_bra), // fixme: consistent naming
-      .f_branch_take_o (x2f_bra),
+      .f_branch_target_o(x2f_pc_bra), // fixme: consistent naming
+      .f_branch_take_o(x2f_bra),
+      .f_dbg_toggle_o(x2f_dbg_toggle),
 
       // to X2/W stage
       .w_fun_o(x2w_fun),
