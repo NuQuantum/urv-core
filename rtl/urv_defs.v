@@ -71,6 +71,7 @@
 `define RD_SOURCE_DIVIDE 3'b011
 `define RD_SOURCE_CSR 3'b011
 
+//  CSR addresses
 `define CSR_ID_CYCLESH 12'hc80
 `define CSR_ID_CYCLESL 12'hc00
 `define CSR_ID_TIMEH 12'hc81
@@ -81,6 +82,10 @@
 `define CSR_ID_MCAUSE 12'h342
 `define CSR_ID_MIP 12'h344
 `define CSR_ID_MIE 12'h304
+`define CSR_ID_DBGSTATUS  12'h7c0
+`define CSR_ID_DBGSCRATCH 12'h7c4
+`define CSR_ID_DBGMBXO 12'h7d0
+`define CSR_ID_DBGMBXI 12'h7d4
 
 `define CSR_OP_CSRRW 3'b001
 `define CSR_OP_CSRRS 3'b010

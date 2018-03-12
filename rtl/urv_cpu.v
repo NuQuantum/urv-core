@@ -67,7 +67,13 @@ module urv_cpu
    input         dbg_force_i,
    output        dbg_enabled_o,
    input [31:0]  dbg_insn_i,
-   output        dbg_insn_ready_o
+   output        dbg_insn_ready_o,
+
+   input [31:0]  dbg_mbxi_data_i,
+   input         dbg_mbxi_valid_i,
+   output [31:0] dbg_mbxo_data_o,
+   output        dbg_mbxo_valid_o,
+   input         dbg_mbxo_read_i
    );
 
 
@@ -325,7 +331,14 @@ module urv_cpu
       // CSR registers/timer stuff
       .csr_time_i (csr_time),
       .csr_cycles_i (csr_cycles),
-      .timer_tick_i (sys_tick)
+      .timer_tick_i (sys_tick),
+
+      // Debug mailboxes
+      .dbg_mbxi_data_i(dbg_mbxi_data_i),
+      .dbg_mbxi_valid_i(dbg_mbxi_valid_i),
+      .dbg_mbxo_data_o(dbg_mbxo_data_o),
+      .dbg_mbxo_valid_o(dbg_mbxo_valid_o),
+      .dbg_mbxo_read_i(dbg_mbxo_read_i)
    );
 
    // Execute 2/Writeback stage
