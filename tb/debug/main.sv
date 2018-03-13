@@ -52,6 +52,7 @@ module main;
    reg [31:0] mbxi_data;
    reg        mbxi_write;
    wire       mbxi_full;
+   wire [31:0] mbxo_data;
 
 
    const var [31:0] insn_nop = 32'h13;
@@ -60,6 +61,13 @@ module main;
    const var [31:0] insn_sw_t1_t0     = 32'h0062a023;
    const var [31:0] insn_jr_t0        = 32'h00028067;
    const var [31:0] insn_ebreak       = 32'h00100073;
+
+   const var [31:0] insn_csrw_mbxo_ra = 32'h7d409073;
+   const var [31:0] insn_mov_ra_pc4   = 32'h000000ef;
+   const var [31:0] insn_csrr_ra_mbxi = 32'h7d0020f3;
+   const var [31:0] insn_ret          = 32'h00008067; // Use a different reg?
+   const var [31:0] insn_jmp_4        = 32'h0040006f;
+
 
    const var [31:0] loader [14] = '{ 32'h00000513,  //  li	a0,0
                                      32'h7c0022f3,  //  csrr	t0,0x7c0
@@ -165,7 +173,7 @@ module main;
       .dbg_mbxi_data_i(mbxi_data),
       .dbg_mbxi_write_i(mbxi_write),
       .dbg_mbxi_full_o(mbxi_full),
-      .dbg_mbxo_data_o(),
+      .dbg_mbxo_data_o(mbxo_data),
       .dbg_mbxo_full_o(),
       .dbg_mbxo_read_i(1'b0)
       );
@@ -188,6 +196,25 @@ module main;
       @(posedge clk);
       while(mbxi_full)
         @(posedge clk);
+   endtask
+
+   task read_pc;
+      reg [31:0] pc, ra;
+
+      // write x1 to mbxo, jal x1, 0, write x1 to mbxo, read x1 from mbxi
+      send_insn(insn_csrw_mbxo_ra);
+      send_insn(insn_nop);
+      ra <= mbxo_data;
+      send_insn(insn_mov_ra_pc4);
+      send_insn(insn_csrw_mbxo_ra);
+      send_insn(insn_nop);
+      pc <= mbxo_data - 4; // Jal save pc + 4
+      mbxi_data <= ra;
+      mbxi_write <= 1;
+      send_insn(insn_csrr_ra_mbxi);
+      mbxi_write <= 0;
+
+      $display("Break: pc=%x, ra=%x\n", pc, ra);
    endtask
 
    initial begin
@@ -263,6 +290,36 @@ module main;
            end
          $fclose(fd);
       end
+
+      // Wait until debug mode is enabled again.
+      while (!dbg_enabled)
+        @(posedge clk) ;
+
+      // Read pc
+      read_pc;
+
+      // Continue
+      send_insn (insn_jmp_4);
+      send_insn (insn_ebreak);
+      dbg_insn <= insn_nop;
+
+      while (1)
+        begin
+           repeat(100) @(posedge clk);
+
+           // Stop
+           dbg_force = 1;
+           while (!dbg_enabled)
+             @(posedge clk) ;
+           dbg_force = 0;
+
+           // Read pc
+           read_pc;
+
+           // Continue
+           send_insn (insn_ebreak);
+           dbg_insn <= insn_nop;
+        end
    end
 
    function string decode_op(bit[2:0] fun);

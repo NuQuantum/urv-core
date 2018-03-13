@@ -3,11 +3,11 @@ RISCV_GCC = $(RISCV_PREFIX)gcc
 
 SW_DIR=../../sw
 
-CFLAGS = -march=rv32im -mabi=ilp32 -DSIM -I$(SW_DIR)/common
+CFLAGS = -march=rv32im -mabi=ilp32 -O
 
 all: app1.bin
 
-app1: crt0.o app1.o uart.o
+app1: crt0.o app1.o
 	$(RISCV_GCC) -o $@ $^ -nostdlib -T $(SW_DIR)/common/ram2.ld -Wl,-Map,$@.map
 
 app1.bin: app1
@@ -21,3 +21,6 @@ uart.o: $(SW_DIR)/common/uart.c
 
 app1.o: app1.c
 	$(RISCV_GCC) -c $(CFLAGS) -o $@ $<
+
+clean:
+	$(RM) -f app1 *.o *.bin
