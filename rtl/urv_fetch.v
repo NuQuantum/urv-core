@@ -54,17 +54,17 @@ module urv_fetch
    reg 	      rst_d;
 
    reg [31:0]  pc_next;
-   reg [31:0]  pc_plus_4;
    reg         dbg_mode;
    reg [2:0]   pipeline_cnt;
 
    always@*
      if( x_bra_i )
        pc_next <= x_pc_bra_i;
-     else if (!rst_d || f_stall_i || !im_valid_i || dbg_mode)
+     else if (!rst_d || f_stall_i || !im_valid_i
+              || dbg_mode || dbg_force_i || pipeline_cnt != 0)
        pc_next <= pc;
      else
-       pc_next <= pc_plus_4;
+       pc_next <= pc + 4;
 
    // Start fetching the next instruction
    assign im_addr_o = pc_next;
@@ -76,7 +76,6 @@ module urv_fetch
        begin
           //  PC = 0 at reset.
 	  pc <= 0;
-	  pc_plus_4 <= 4;
 
           f_pc_o <= 0;
 	  f_ir_o <= 0;
@@ -104,9 +103,11 @@ module urv_fetch
                if(!dbg_mode
                   && (dbg_force_i || x_dbg_toggle || pipeline_cnt != 0))
                  begin
-                    //  Try to enter in debug mode.
+                    //  Stall until the debug mode is set (pipeline flushed).
                     f_valid_o <= 0;
-                    if (pipeline_cnt == 4)
+                    //  Ebreak enters directly in the debug mode.  As it is
+                    //  considered as a branch, stages are killed.
+                    if (pipeline_cnt == 4 || x_dbg_toggle)
                       dbg_mode <= 1;
                     else
                       pipeline_cnt <= pipeline_cnt + 1;
@@ -115,8 +116,6 @@ module urv_fetch
                  begin
                     //  Default: insn not valid
                     f_valid_o <= 0;
-
-                    pc_plus_4 <= pc + 4;
 
                     if (x_dbg_toggle)
                       begin
@@ -139,7 +138,6 @@ module urv_fetch
                  end
                else if(im_valid_i)
                  begin
-	            pc_plus_4 <= (x_bra_i ? x_pc_bra_i : pc_plus_4) + 4;
 	            f_ir_o <= im_data_i;
                     // A branch invalidate the current instruction.
 	            f_valid_o <= (rst_d && !x_bra_i);
