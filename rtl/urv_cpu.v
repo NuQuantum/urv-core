@@ -62,7 +62,7 @@ module urv_cpu
    // immediate.  Interrupts are disabled in debug mode.
    // In debug mode, instructions are executed from dbg_insn_i.  An instruction
    // is fetched when dbg_insn_read_o is set.  As instructions are always
-   // fetched, they must be always valid.  Use a nop (0x19) if nothing should
+   // fetched, they must be always valid.  Use a nop (0x13) if nothing should
    // be executed.
    input         dbg_force_i,
    output        dbg_enabled_o,
@@ -70,10 +70,11 @@ module urv_cpu
    output        dbg_insn_ready_o,
 
    input [31:0]  dbg_mbxi_data_i,
-   input         dbg_mbxi_valid_i,
+   input         dbg_mbxi_write_i,
+   output        dbg_mbxi_full_o,
    output [31:0] dbg_mbxo_data_o,
-   output        dbg_mbxo_valid_o,
-   input         dbg_mbxo_read_i
+   input         dbg_mbxo_read_i,
+   output        dbg_mbxo_full_o
    );
 
 
@@ -178,7 +179,7 @@ module urv_cpu
       .dbg_enabled_o(dbg_enabled_o),
       .dbg_insn_i(dbg_insn_i),
       .dbg_insn_ready_o(dbg_insn_ready_o),
-      .x_dbg_toggle(x_dbg_toggle)
+      .x_dbg_toggle(x2f_dbg_toggle)
       );
 
 
@@ -335,10 +336,11 @@ module urv_cpu
 
       // Debug mailboxes
       .dbg_mbxi_data_i(dbg_mbxi_data_i),
-      .dbg_mbxi_valid_i(dbg_mbxi_valid_i),
+      .dbg_mbxi_write_i(dbg_mbxi_write_i),
+      .dbg_mbxi_full_o(dbg_mbxi_full_o),
       .dbg_mbxo_data_o(dbg_mbxo_data_o),
-      .dbg_mbxo_valid_o(dbg_mbxo_valid_o),
-      .dbg_mbxo_read_i(dbg_mbxo_read_i)
+      .dbg_mbxo_read_i(dbg_mbxo_read_i),
+      .dbg_mbxo_full_o(dbg_mbxo_full_o)
    );
 
    // Execute 2/Writeback stage

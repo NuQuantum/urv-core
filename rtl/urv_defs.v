@@ -84,8 +84,8 @@
 `define CSR_ID_MIE 12'h304
 `define CSR_ID_DBGSTATUS  12'h7c0
 `define CSR_ID_DBGSCRATCH 12'h7c4
-`define CSR_ID_DBGMBXO 12'h7d0
-`define CSR_ID_DBGMBXI 12'h7d4
+`define CSR_ID_DBGMBXI 12'h7d0
+`define CSR_ID_DBGMBXO 12'h7d4
 
 `define CSR_OP_CSRRW 3'b001
 `define CSR_OP_CSRRS 3'b010

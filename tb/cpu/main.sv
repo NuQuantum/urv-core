@@ -45,7 +45,6 @@ module main;
    reg        dm_ready;
 
 
-
    localparam int mem_size = 16384;
 
    reg [31:0]  mem[0:mem_size - 1];

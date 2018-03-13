@@ -56,10 +56,11 @@ module urv_csr
 
    //  Debug mailboxes
    input [31:0]  dbg_mbxi_data_i,
-   input         dbg_mbxi_valid_i,
+   input         dbg_mbxi_write_i,
+   output        dbg_mbxi_full_o,
    output [31:0] dbg_mbxo_data_o,
-   output        dbg_mbxo_valid_o,
-   input         dbg_mbxo_read_i
+   input         dbg_mbxo_read_i,
+   output        dbg_mbxo_full_o
    );
 
    reg [31:0] 	csr_mscratch;
@@ -86,7 +87,10 @@ module urv_csr
        `CSR_ID_MCAUSE: csr_in1 <= csr_mcause_i;
        `CSR_ID_MIP: csr_in1 <= csr_mip_i;
        `CSR_ID_MIE: csr_in1 <= csr_mie_i;
+       `CSR_ID_DBGSTATUS: csr_in1 <= {30'b0, mbxo_valid, mbxi_valid};
        `CSR_ID_DBGSCRATCH: csr_in1 <= csr_dbg_scratch;
+       `CSR_ID_DBGMBXI: csr_in1 <= mbxi_data;
+       `CSR_ID_DBGMBXO: csr_in1 <= mbxo_data;
        default: csr_in1 <= 32'hx;
      endcase // case (d_csr_sel_i)
 
@@ -134,7 +138,7 @@ module urv_csr
        begin
           if (dbg_mbxo_read_i)
             mbxo_valid <= 0;
-          if (dbg_mbxi_valid_i)
+          if (dbg_mbxi_write_i)
             begin
                mbxi_data <= dbg_mbxi_data_i;
                mbxi_valid <= 1;
@@ -157,7 +161,8 @@ module urv_csr
        end // else: !if(rst_i)
 
    assign dbg_mbxo_data_o = mbxo_data;
-   assign dbg_mbxo_valid_o = mbxo_valid;
+   assign dbg_mbxo_full_o = mbxo_valid;
+   assign dbg_mbxi_full_o = mbxi_valid;
 
    assign x_csr_write_value_o = csr_out;
 endmodule

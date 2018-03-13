@@ -61,7 +61,7 @@ module urv_fetch
    always@*
      if( x_bra_i )
        pc_next <= x_pc_bra_i;
-     else if (!rst_d || f_stall_i || !im_valid_i)
+     else if (!rst_d || f_stall_i || !im_valid_i || dbg_mode)
        pc_next <= pc;
      else
        pc_next <= pc_plus_4;
@@ -78,12 +78,13 @@ module urv_fetch
 	  pc <= 0;
 	  pc_plus_4 <= 4;
 
+          f_pc_o <= 0;
 	  f_ir_o <= 0;
 	  f_valid_o <= 0;
 
           //  Allow to start in debug mode.
           dbg_mode <= dbg_force_i;
-          dbg_insn_ready_o <= dbg_force_i;
+          dbg_insn_ready_o <= 0;
 
           pipeline_cnt <= 0;
 
@@ -98,12 +99,13 @@ module urv_fetch
 	  if (!f_stall_i)
             begin
 	       f_pc_o <= pc;
+               pc <= pc_next;
 
                if((dbg_force_i || x_dbg_toggle) && !dbg_mode)
                  begin
                     //  Try to enter in debug mode.
                     f_valid_o <= 0;
-                    if (pipeline_cnt == 5)
+                    if (pipeline_cnt == 4)
                       dbg_mode <= 1;
                     else
                       pipeline_cnt <= pipeline_cnt + 1;
@@ -112,6 +114,8 @@ module urv_fetch
                  begin
                     //  Default: insn not valid
                     f_valid_o <= 0;
+
+                    pc_plus_4 <= pc + 4;
 
                     if (x_dbg_toggle)
                       begin
@@ -127,7 +131,7 @@ module urv_fetch
                          dbg_insn_ready_o <= 0;
                          pipeline_cnt <= 0;
                       end
-                    else if (pipeline_cnt == 5)
+                    else if (pipeline_cnt == 4)
                       dbg_insn_ready_o <= 1;
                     else
                       pipeline_cnt <= pipeline_cnt + 1;
@@ -136,14 +140,13 @@ module urv_fetch
                  begin
 	            pc_plus_4 <= (x_bra_i ? x_pc_bra_i : pc_plus_4) + 4;
 	            f_ir_o <= im_data_i;
+                    // A branch invalidate the current instruction.
 	            f_valid_o <= (rst_d && !x_bra_i);
 	         end
                else
                  begin// if (i_valid_i)
 	            f_valid_o <= 0;
 	         end
-
-               pc <= pc_next;
 	    end
        end
 

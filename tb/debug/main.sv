@@ -50,7 +50,8 @@ module main;
    wire       dbg_insn_ready;
 
    reg [31:0] mbxi_data;
-   reg        mbxi_valid;
+   reg        mbxi_write;
+   wire       mbxi_full;
 
 
    const var [31:0] insn_nop = 32'h13;
@@ -60,21 +61,20 @@ module main;
    const var [31:0] insn_jr_t0        = 32'h00028067;
    const var [31:0] insn_ebreak       = 32'h00100073;
 
-   const var [31:0] loader [15] = '{ 32'h00000013,
-                                     32'h00000513,
-                                     32'h7c0022f3,
-                                     32'h0012f293,
-                                     32'hfe028ce3,
-                                     32'h7d0025f3,
-                                     32'h02058063,
-                                     32'h7c0022f3,
-                                     32'h0012f293,
-                                     32'hfe028ce3,
-                                     32'h7d002373,
-                                     32'h00652023,
-                                     32'h00450513,
-                                     32'hfeb514e3,
-                                     32'h00100073 };
+   const var [31:0] loader [14] = '{ 32'h00000513,  //  li	a0,0
+                                     32'h7c0022f3,  //  csrr	t0,0x7c0
+                                     32'h0012f293,  //  andi	t0,t0,1
+                                     32'hfe028ce3,  //  beqz	t0,-8
+                                     32'h7d0025f3,  //  csrr	a1,0x7d0
+                                     32'h7c0022f3,  //  csrr	t0,0x7c0
+                                     32'h0012f293,  //  andi	t0,t0,1
+                                     32'hfe028ce3,  //  beqz	t0,-8
+                                     32'h7d002373,  //  csrr	t1,0x7d0
+                                     32'h00652023,  //  sw	t1,0(a0)
+                                     32'h00450513,  //  addi	a0,a0,4
+                                     32'hfeb544e3,  //  blt	a0,a1,-24
+                                     32'h00000513,  //  li	a0,0
+                                     32'h00050067}; //  jr	a0
 
    localparam int mem_size = 16384;
 
@@ -163,9 +163,10 @@ module main;
 
       // Debug mailboxes
       .dbg_mbxi_data_i(mbxi_data),
-      .dbg_mbxi_valid_i(mbxi_valid),
+      .dbg_mbxi_write_i(mbxi_write),
+      .dbg_mbxi_full_o(mbxi_full),
       .dbg_mbxo_data_o(),
-      .dbg_mbxo_valid_o(),
+      .dbg_mbxo_full_o(),
       .dbg_mbxo_read_i(1'b0)
       );
 
@@ -179,6 +180,16 @@ module main;
       @(posedge clk);
    endtask // send_insn
 
+   task send_mbxi(input [31:0] data);
+      mbxi_data <= data;
+      mbxi_write <= 1;
+      @(posedge clk);
+      mbxi_write <= 0;
+      @(posedge clk);
+      while(mbxi_full)
+        @(posedge clk);
+   endtask
+
    initial begin
 //      load_ram("../../sw/test3/test3.ram");
 //      load_ram("../../sw/testsuite/benchmarks/dhrystone/dhrystone.ram");
@@ -189,7 +200,7 @@ module main;
 
       dbg_insn = insn_nop;
       mbxi_data <= 0;
-      mbxi_valid <= 0;
+      mbxi_write <= 0;
 
       repeat(3) @(posedge clk);
       rst = 0;
@@ -201,12 +212,12 @@ module main;
         begin
            // Address
            mbxi_data <= loader_addr + i * 4;
-           mbxi_valid <= 1;
+           mbxi_write <= 1;
            send_insn (insn_csrr_t0_mbxi);
 
            // Insn
            mbxi_data <= loader[i];
-           mbxi_valid <= 1;
+           mbxi_write <= 1;
            send_insn (insn_csrr_t1_mbxi);
 
            //  Store
@@ -215,11 +226,11 @@ module main;
 
       //  Set PC address
       mbxi_data <= loader_addr;
-      mbxi_valid <= 1;
+      mbxi_write <= 1;
       send_insn (insn_csrr_t0_mbxi);
 
       //  Branch.
-      mbxi_valid <= 0;
+      mbxi_write <= 0;
       send_insn (insn_jr_t0);
 
       //  Flush mailbox.
@@ -227,6 +238,31 @@ module main;
 
       send_insn (insn_ebreak);
       dbg_insn <= insn_nop;
+
+      //  Use loader to load the program.
+      begin
+         int fd;
+         int filelen;
+
+         fd = $fopen("app1.bin", "rb");
+         void'($fseek(fd, 0, 2));
+         filelen = $ftell(fd);
+         void'($rewind(fd));
+         send_mbxi(filelen);
+         filelen = (filelen + 3) / 4;
+         for(int i = 0; i < filelen; i++)
+           begin
+              var [7:0] b0, b1, b2, b3;
+              int l;
+              l = $fread(b0, fd);
+              l += $fread(b1, fd);
+              l += $fread(b2, fd);
+              l += $fread(b3, fd);
+              //  LE.
+              send_mbxi({b3, b2, b1, b0});
+           end
+         $fclose(fd);
+      end
    end
 
    function string decode_op(bit[2:0] fun);
@@ -506,6 +542,18 @@ module main;
 		end
 		`CSR_OP_CSRRW: begin
 		   opc = "csrrw";
+		   args = $sformatf("%-3s %-3s %-3s [0x%08x]",
+                                    rd, decode_csr(DUT.d2x_csr_sel),
+                                    rs1, DUT.execute.rs1);
+		end
+		`CSR_OP_CSRRS: begin
+		   opc = "csrrs";
+		   args = $sformatf("%-3s %-3s %-3s [0x%08x]",
+                                    rd, decode_csr(DUT.d2x_csr_sel),
+                                    rs1, DUT.execute.rs1);
+		end
+		`CSR_OP_CSRRC: begin
+		   opc = "csrrc";
 		   args = $sformatf("%-3s %-3s %-3s [0x%08x]",
                                     rd, decode_csr(DUT.d2x_csr_sel),
                                     rs1, DUT.execute.rs1);
