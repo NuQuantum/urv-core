@@ -126,10 +126,11 @@ module main;
       .dbg_insn_ready_o(),
 
       // Debug mailboxes
-      .dbg_mbxi_data_i(32'h0),
-      .dbg_mbxi_valid_i(1'b0),
+      .dbg_mbxi_data_i(0),
+      .dbg_mbxi_write_i(1'b0),
+      .dbg_mbxi_full_o(),
       .dbg_mbxo_data_o(),
-      .dbg_mbxo_valid_o(),
+      .dbg_mbxo_full_o(),
       .dbg_mbxo_read_i(1'b0)
       );
 
