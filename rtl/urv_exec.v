@@ -50,6 +50,7 @@ module urv_exec
    input             d_is_csr_i,
    input             d_is_mret_i,
    input             d_is_ebreak_i,
+   input             d_dbg_mode_i,
    input [4:0]       d_csr_imm_i,
    input [11:0]      d_csr_sel_i,
 
@@ -243,6 +244,8 @@ module urv_exec
        branch_target <= exception_address;
      else if (x_exception)
        branch_target <= `URV_TRAP_VECTOR;
+     else if (d_is_ebreak_i)
+       branch_target <= d_pc_i;
      else
        branch_target <= dm_addr;
 
@@ -447,7 +450,7 @@ module urv_exec
 	 `OPC_BRANCH:
 	   branch_take <= branch_condition_met;
          `OPC_SYSTEM:
-           branch_take <= d_is_mret_i;
+           branch_take <= d_is_mret_i || (d_is_ebreak_i && !d_dbg_mode_i);
 	 default:
 	   branch_take <= 0;
        endcase // case (d_opcode_i)

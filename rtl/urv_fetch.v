@@ -101,7 +101,8 @@ module urv_fetch
 	       f_pc_o <= pc;
                pc <= pc_next;
 
-               if((dbg_force_i || x_dbg_toggle) && !dbg_mode)
+               if(!dbg_mode
+                  && (dbg_force_i || x_dbg_toggle || pipeline_cnt != 0))
                  begin
                     //  Try to enter in debug mode.
                     f_valid_o <= 0;

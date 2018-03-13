@@ -277,11 +277,12 @@ module urv_cpu
 
       // from D stage
       .d_valid_i(d2x_valid),
-      .d_is_csr_i (d2x_is_csr),
-      .d_is_mret_i (d2x_is_mret),
-      .d_is_ebreak_i (d2x_is_ebreak),
-      .d_csr_imm_i (d2x_csr_imm),
-      .d_csr_sel_i (d2x_csr_sel),
+      .d_is_csr_i(d2x_is_csr),
+      .d_is_mret_i(d2x_is_mret),
+      .d_is_ebreak_i(d2x_is_ebreak),
+      .d_dbg_mode_i(dbg_enabled_o),
+      .d_csr_imm_i(d2x_csr_imm),
+      .d_csr_sel_i(d2x_csr_sel),
       .d_pc_i(d2x_pc),
       .d_rd_i(d2x_rd),
       .d_fun_i(d2x_fun),
