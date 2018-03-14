@@ -47,7 +47,6 @@ module main;
    reg        dbg_force = 1;
    wire       dbg_enabled;
    reg [31:0] dbg_insn;
-   wire       dbg_insn_ready;
 
    reg [31:0] mbxi_data;
    reg        mbxi_write;
@@ -167,7 +166,6 @@ module main;
       .dbg_force_i(dbg_force),
       .dbg_enabled_o(dbg_enabled),
       .dbg_insn_i(dbg_insn),
-      .dbg_insn_ready_o(dbg_insn_ready),
 
       // Debug mailboxes
       .dbg_mbxi_data_i(mbxi_data),
@@ -183,9 +181,8 @@ module main;
 
    task send_insn (input [31:0] insn);
       dbg_insn <= insn;
-      while (!dbg_insn_ready)
-        @(posedge clk);
       @(posedge clk);
+      dbg_insn <= insn_nop;
    endtask // send_insn
 
    task send_mbxi(input [31:0] data);
@@ -203,16 +200,20 @@ module main;
 
       // write x1 to mbxo, jal x1, 0, write x1 to mbxo, read x1 from mbxi
       send_insn(insn_csrw_mbxo_ra);
-      send_insn(insn_nop);
-      ra <= mbxo_data;
       send_insn(insn_mov_ra_pc4);
-      send_insn(insn_csrw_mbxo_ra);
       send_insn(insn_nop);
-      pc <= mbxo_data - 4; // Jal save pc + 4
+      send_insn(insn_nop);
+      //  Read ra only once the csrw has been executed.
+      ra <= mbxo_data;
+      send_insn(insn_csrw_mbxo_ra);
       mbxi_data <= ra;
       mbxi_write <= 1;
       send_insn(insn_csrr_ra_mbxi);
       mbxi_write <= 0;
+      send_insn(insn_nop);
+      send_insn(insn_nop);
+      pc <= mbxo_data - 4; // Jal save pc + 4
+      send_insn(insn_nop);
 
       $display("Break: pc=%x, ra=%x\n", pc, ra);
    endtask
@@ -241,11 +242,15 @@ module main;
            mbxi_data <= loader_addr + i * 4;
            mbxi_write <= 1;
            send_insn (insn_csrr_t0_mbxi);
+           send_insn (insn_nop);
+           send_insn (insn_nop);
 
            // Insn
            mbxi_data <= loader[i];
            mbxi_write <= 1;
            send_insn (insn_csrr_t1_mbxi);
+           send_insn (insn_nop);
+           send_insn (insn_nop);
 
            //  Store
            send_insn (insn_sw_t1_t0);
@@ -256,15 +261,18 @@ module main;
       mbxi_write <= 1;
       send_insn (insn_csrr_t0_mbxi);
 
-      //  Branch.
+      //  Branch and be sure it is executed.
       mbxi_write <= 0;
       send_insn (insn_jr_t0);
+      send_insn (insn_nop);
+      send_insn (insn_nop);
 
       //  Flush mailbox.
       send_insn (insn_csrr_t1_mbxi);
 
       send_insn (insn_ebreak);
-      dbg_insn <= insn_nop;
+      send_insn (insn_nop);
+      send_insn (insn_nop);
 
       //  Use loader to load the program.
       begin
@@ -300,6 +308,9 @@ module main;
 
       // Continue
       send_insn (insn_jmp_4);
+      send_insn (insn_nop);
+      send_insn (insn_nop);
+      send_insn (insn_nop);
       send_insn (insn_ebreak);
       dbg_insn <= insn_nop;
 
@@ -318,7 +329,8 @@ module main;
 
            // Continue
            send_insn (insn_ebreak);
-           dbg_insn <= insn_nop;
+           send_insn (insn_nop);
+           send_insn (insn_nop);
         end
    end
 

@@ -46,7 +46,6 @@ module urv_fetch
  input             dbg_force_i,
  output            dbg_enabled_o,
  input [31:0]      dbg_insn_i,
- output reg        dbg_insn_ready_o,
  input             x_dbg_toggle
 );
 
@@ -83,7 +82,6 @@ module urv_fetch
 
           //  Allow to start in debug mode.
           dbg_mode <= dbg_force_i;
-          dbg_insn_ready_o <= 0;
 
           pipeline_cnt <= 0;
 
@@ -108,7 +106,10 @@ module urv_fetch
                     //  Ebreak enters directly in the debug mode.  As it is
                     //  considered as a branch, stages are killed.
                     if (pipeline_cnt == 4 || x_dbg_toggle)
-                      dbg_mode <= 1;
+                      begin
+                         dbg_mode <= 1;
+                         pipeline_cnt <= 0;
+                      end
                     else
                       pipeline_cnt <= pipeline_cnt + 1;
                  end
@@ -119,22 +120,15 @@ module urv_fetch
 
                     if (x_dbg_toggle)
                       begin
-                         //  Leave debug mode
+                         //  Leave debug mode immediately.
                          dbg_mode <= 0;
-                         pipeline_cnt <= 0;
-                         // dbg_insn_ready_o must be 0.
+                         // pipeline_cnt must be 0.
                       end
-                    else if (dbg_insn_ready_o)
+                    else
                       begin
                          f_ir_o <= dbg_insn_i;
                          f_valid_o <= 1;
-                         dbg_insn_ready_o <= 0;
-                         pipeline_cnt <= 0;
                       end
-                    else if (pipeline_cnt == 4)
-                      dbg_insn_ready_o <= 1;
-                    else
-                      pipeline_cnt <= pipeline_cnt + 1;
                  end
                else if(im_valid_i)
                  begin

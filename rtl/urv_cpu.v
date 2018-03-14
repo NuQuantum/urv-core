@@ -60,14 +60,12 @@ module urv_cpu
    // is executed (from the dbg_insn_i port).
    // When debug mode is entered, dbg_enabled_o is set.  This may not be
    // immediate.  Interrupts are disabled in debug mode.
-   // In debug mode, instructions are executed from dbg_insn_i.  An instruction
-   // is fetched when dbg_insn_read_o is set.  As instructions are always
-   // fetched, they must be always valid.  Use a nop (0x13) if nothing should
-   // be executed.
+   // In debug mode, instructions are executed from dbg_insn_i.
+   // As instructions are always fetched, they must be always valid.  Use
+   // a nop (0x13) if nothing should be executed.
    input         dbg_force_i,
    output        dbg_enabled_o,
    input [31:0]  dbg_insn_i,
-   output        dbg_insn_ready_o,
 
    input [31:0]  dbg_mbxi_data_i,
    input         dbg_mbxi_write_i,
@@ -178,7 +176,6 @@ module urv_cpu
       .dbg_force_i(dbg_force_i),
       .dbg_enabled_o(dbg_enabled_o),
       .dbg_insn_i(dbg_insn_i),
-      .dbg_insn_ready_o(dbg_insn_ready_o),
       .x_dbg_toggle(x2f_dbg_toggle)
       );
 
