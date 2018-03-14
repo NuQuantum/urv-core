@@ -242,7 +242,7 @@ module urv_iram
 
    
    
-   integer 		     f, addr;
+   integer 		     tmp, f, addr;
    reg[31:0] data;
    reg [8*20-1:0]	     cmd;
    
@@ -268,7 +268,7 @@ module urv_iram
            begin
            
               
-              $fscanf(f,"%s %08x %08x", cmd,addr,data);
+              tmp = $fscanf(f, "%s %08x %08x", cmd,addr, data);
               if(cmd == "write")
 		begin
                    mem[addr % g_size][31:24] = data[31:24];

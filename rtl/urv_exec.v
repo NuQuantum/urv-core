@@ -44,8 +44,6 @@ module urv_exec
 
    input 	     d_valid_i,
 
-   input 	     d_load_hazard_i,
-   
    input [4:0] 	     d_opcode_i,
    input 	     d_shifter_sign_i,
 
@@ -76,8 +74,6 @@ module urv_exec
    
    output reg [31:0] f_branch_target_o,
    output 	     f_branch_take_o,
-
-   output 	     w_load_hazard_o,
 
    input 	     irq_i,
    
