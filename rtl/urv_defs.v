@@ -68,7 +68,7 @@
 `define RD_SOURCE_ALU 3'b000
 `define RD_SOURCE_SHIFTER 3'b010
 `define RD_SOURCE_MULTIPLY 3'b001
-`define RD_SOURCE_DIVIDE 3'b011
+//  `define RD_SOURCE_DIVIDE 3'b011 ?? conflict with CSR
 `define RD_SOURCE_CSR 3'b011
 
 //  CSR addresses

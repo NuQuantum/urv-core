@@ -34,7 +34,6 @@ module urv_exceptions
    input         d_is_csr_i,
    input         d_is_mret_i,
 
-   input [2:0]   d_fun_i,
    input [4:0]   d_csr_imm_i,
    input [11:0]  d_csr_sel_i,
 
@@ -67,8 +66,6 @@ module urv_exceptions
 
    reg [3:0] 	 csr_mcause;
 
-   reg 		 exception;
-
    reg [5:0] 	 except_vec_masked;
 
    assign csr_mcause_o = {28'h0, csr_mcause};
@@ -96,10 +93,6 @@ module urv_exceptions
 	     except_vec_masked[5] <= csr_mie[`EXCEPT_IRQ] & csr_ie;
 	end
      end
-
-   always@*
-     exception <= |except_vec_masked | exp_invalid_insn_i;
-
 
    always@(posedge clk_i)
      if(rst_i)

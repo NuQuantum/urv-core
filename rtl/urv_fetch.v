@@ -114,7 +114,7 @@ module urv_fetch
                          pipeline_cnt <= 0;
                       end
                     else
-                      pipeline_cnt <= pipeline_cnt + 1;
+                      pipeline_cnt <= pipeline_cnt + 1'b1;
                  end
                else if(dbg_mode)
                  begin
@@ -134,7 +134,7 @@ module urv_fetch
                     if (x_dbg_toggle || dbg_insn_set_i)
                       pipeline_cnt <= 0;
                     else if (pipeline_cnt != 4)
-                      pipeline_cnt <= pipeline_cnt + 1;
+                      pipeline_cnt <= pipeline_cnt + 1'b1;
                  end
                else if(im_valid_i)
                  begin

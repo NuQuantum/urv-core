@@ -55,10 +55,8 @@ module urv_exec
    input [11:0]      d_csr_sel_i,
 
    input [31:0]      d_imm_i,
-   input             d_is_signed_compare_i,
    input             d_is_signed_alu_op_i,
    input             d_is_add_i,
-   input             d_is_shift_i,
    input             d_is_load_i,
    input             d_is_store_i,
   // input 	     d_is_divide_i,
@@ -128,7 +126,8 @@ module urv_exec
 
    reg [31:0] 	 branch_target;
 
-   reg [31:0] 	 dm_addr, dm_data_s, dm_select_s;
+   reg [31:0]    dm_addr, dm_data_s;
+   reg [3:0]     dm_select_s;
 
    // Comparator
    wire [32:0] 	 cmp_op1 = { d_is_signed_alu_op_i ? rs1[31] : 1'b0, rs1 };
@@ -191,7 +190,6 @@ module urv_exec
 
       .d_is_csr_i(d_is_csr_i),
       .d_is_mret_i (d_is_mret_i),
-      .d_fun_i(d_fun_i),
       .d_csr_imm_i(d_csr_imm_i),
       .d_csr_sel_i(d_csr_sel_i),
       .x_csr_write_value_i(csr_write_value),
@@ -295,7 +293,6 @@ module urv_exec
       .d_shamt_i(alu_op2[4:0]),
       .d_fun_i(d_fun_i),
       .d_shifter_sign_i(d_shifter_sign_i),
-      .d_is_shift_i(d_is_shift_i),
 
       .w_rd_o(w_rd_shifter_o)
       );

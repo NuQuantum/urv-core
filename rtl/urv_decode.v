@@ -49,14 +49,11 @@ module urv_decode
  output [4:0]      x_rs1_o,
  output [4:0]      x_rs2_o,
  output [4:0]      x_rd_o,
- output reg [4:0]  x_shamt_o,
  output reg [2:0]  x_fun_o,
  output [4:0]      x_opcode_o,
  output reg        x_shifter_sign_o,
- output reg        x_is_signed_compare_o,
  output reg        x_is_signed_alu_op_o,
  output reg        x_is_add_o,
- output            x_is_shift_o,
  output reg        x_is_load_o,
  output reg        x_is_store_o,
  output reg        x_is_undef_o,
@@ -161,8 +158,6 @@ module urv_decode
 	  x_rs2 <= f_rs2;
 	  x_rd <= f_rd;
 	  x_opcode <= d_opcode;
-
-	  x_shamt_o <= f_ir_i[24:20];
        end
 
    // ALU function decoding
@@ -326,7 +321,6 @@ module urv_decode
           x_is_ebreak_o <= (d_opcode == `OPC_SYSTEM) && (d_fun == 0) && (f_ir_i [31:20] == 12'b0000000_00001);
        end
 
-   assign x_is_shift_o = x_is_shift;
    assign x_rd_write_o = x_rd_write;
 
 endmodule // rv_decode

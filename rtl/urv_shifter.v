@@ -42,8 +42,7 @@ module urv_shifter
 
      input [4:0]       d_shamt_i,
      input [2:0]       d_fun_i,
-     input 	       d_shifter_sign_i,
-     input 	       d_is_shift_i
+     input 	       d_shifter_sign_i
    );
 
    wire 	 extend_sign = ((d_fun_i == `FUNC_SR) && d_shifter_sign_i) ? d_rs1_i[31] : 1'b0;
