@@ -290,7 +290,7 @@ module urv_cpu
       .d_is_shift_i(d2x_is_shift),
       .d_is_load_i(d2x_is_load),
       .d_is_store_i(d2x_is_store),
-      .d_is_divide_i(1'b0),
+      //.d_is_divide_i(1'b0),
       .d_is_undef_i(d2x_is_undef),
       .d_alu_op1_i(d2x_alu_op1),
       .d_alu_op2_i(d2x_alu_op2),
