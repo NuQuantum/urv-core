@@ -249,7 +249,7 @@ test_ ## testnum: \
 
 #define TEST_ST_OP( testnum, load_inst, store_inst, result, offset, base ) \
     TEST_CASE( testnum, x3, result, \
-      la  x1, base; \
+      lui x1, %hi(base); addi x1, x1, %lo(base) ;      \
       li  x2, result; \
       store_inst x2, offset(x1); \
       load_inst x3, offset(x1); \
@@ -286,9 +286,9 @@ test_ ## testnum: \
 test_ ## testnum: \
     li  TESTNUM, testnum; \
     li  x4, 0; \
-1:  la  x1, result; \
+1:  lui  x1, %hi(result); addi x1, x1, %lo(result) ;      \
     TEST_INSERT_NOPS_ ## src1_nops \
-    la  x2, base; \
+    lui x2, %hi(base); addi x2, x2, %lo(base) ;      \
     TEST_INSERT_NOPS_ ## src2_nops \
     store_inst x1, offset(x2); \
     load_inst x3, offset(x2); \
@@ -302,9 +302,9 @@ test_ ## testnum: \
 test_ ## testnum: \
     li  TESTNUM, testnum; \
     li  x4, 0; \
-1:  la  x2, base; \
+1:  lui x2, %hi(base); addi x2, x2, %lo(base) ;      \
     TEST_INSERT_NOPS_ ## src1_nops \
-    la  x1, result; \
+    lui  x1, %hi(result); addi x1, x1, %lo(result) ;      \
     TEST_INSERT_NOPS_ ## src2_nops \
     store_inst x1, offset(x2); \
     load_inst x3, offset(x2); \
