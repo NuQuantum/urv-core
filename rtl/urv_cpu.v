@@ -95,7 +95,6 @@ module urv_cpu
 
    // F->D stage interface
    wire [31:0] 	 f2d_pc, f2d_ir;
-   wire 	 f2d_ir_valid;
    wire 	 f2d_valid;
 
    // D->RF interface

@@ -115,17 +115,16 @@ module urv_fetch
                  end
                else if(dbg_mode)
                  begin
-                    //  Default: insn not valid
-                    f_valid_o <= 0;
-
                     if (x_dbg_toggle)
                       begin
                          //  Leave debug mode immediately.
                          dbg_mode <= 0;
+                         f_valid_o <= 0;
                          // pipeline_cnt must be 0.
                       end
                     else
                       begin
+                         //  Use instruction from the debug port.
                          f_ir_o <= dbg_insn_i;
                          f_valid_o <= 1;
                       end
