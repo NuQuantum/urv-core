@@ -108,12 +108,9 @@ module urv_exec
    input             timer_tick_i,
 
    //  Debug mailboxes.
-   input [31:0]      dbg_mbxi_data_i,
-   input             dbg_mbxi_write_i,
-   output            dbg_mbxi_full_o,
-   output [31:0]     dbg_mbxo_data_o,
-   input             dbg_mbxo_read_i,
-   output            dbg_mbxo_full_o
+   input [31:0]      dbg_mbx_data_i,
+   input             dbg_mbx_write_i,
+   output [31:0]     dbg_mbx_data_o
    );
 
    wire [31:0] 	 rs1, rs2;
@@ -179,12 +176,9 @@ module urv_exec
       .csr_mepc_i(csr_mepc),
       .csr_mcause_i(csr_mcause),
 
-      .dbg_mbxi_data_i(dbg_mbxi_data_i),
-      .dbg_mbxi_write_i(dbg_mbxi_write_i),
-      .dbg_mbxi_full_o(dbg_mbxi_full_o),
-      .dbg_mbxo_data_o(dbg_mbxo_data_o),
-      .dbg_mbxo_read_i(dbg_mbxo_read_i),
-      .dbg_mbxo_full_o(dbg_mbxo_full_o)
+      .dbg_mbx_data_i(dbg_mbx_data_i),
+      .dbg_mbx_write_i(dbg_mbx_write_i),
+      .dbg_mbx_data_o(dbg_mbx_data_o)
       );
 
    urv_exceptions exception_unit

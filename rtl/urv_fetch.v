@@ -46,6 +46,8 @@ module urv_fetch
  input             dbg_force_i,
  output            dbg_enabled_o,
  input [31:0]      dbg_insn_i,
+ input             dbg_insn_set_i,
+ output            dbg_insn_ready_o,
  input             x_dbg_toggle
 );
 
@@ -69,6 +71,7 @@ module urv_fetch
    assign im_addr_o = pc_next;
 
    assign dbg_enabled_o = dbg_mode;
+   assign dbg_insn_ready_o = pipeline_cnt == 4;
 
    always@(posedge clk_i)
      if (rst_i)
@@ -120,7 +123,6 @@ module urv_fetch
                          //  Leave debug mode immediately.
                          dbg_mode <= 0;
                          f_valid_o <= 0;
-                         // pipeline_cnt must be 0.
                       end
                     else
                       begin
@@ -128,6 +130,11 @@ module urv_fetch
                          f_ir_o <= dbg_insn_i;
                          f_valid_o <= 1;
                       end
+
+                    if (x_dbg_toggle || dbg_insn_set_i)
+                      pipeline_cnt <= 0;
+                    else if (pipeline_cnt != 4)
+                      pipeline_cnt <= pipeline_cnt + 1;
                  end
                else if(im_valid_i)
                  begin
@@ -136,7 +143,7 @@ module urv_fetch
 	            f_valid_o <= (rst_d && !x_bra_i);
 	         end
                else
-                 begin// if (i_valid_i)
+                 begin
 	            f_valid_o <= 0;
 	         end
 	    end

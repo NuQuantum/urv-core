@@ -66,22 +66,19 @@ module urv_cpu
    input         dbg_force_i,
    output        dbg_enabled_o,
    input [31:0]  dbg_insn_i,
+   input         dbg_insn_set_i,
+   output        dbg_insn_ready_o,
 
-   input [31:0]  dbg_mbxi_data_i,
-   input         dbg_mbxi_write_i,
-   output        dbg_mbxi_full_o,
-   output [31:0] dbg_mbxo_data_o,
-   input         dbg_mbxo_read_i,
-   output        dbg_mbxo_full_o
+   input [31:0]  dbg_mbx_data_i,
+   input         dbg_mbx_write_i,
+   output [31:0] dbg_mbx_data_o
    );
 
 
    // pipeline control
    wire 	 f_stall;
-   wire 	 w_stall;
    wire 	 x_stall;
    wire 	 x_kill;
-   wire 	 f_kill;
    wire 	 d_stall;
    wire 	 d_kill;
    wire 	 d_stall_req;
@@ -175,6 +172,8 @@ module urv_cpu
       .dbg_force_i(dbg_force_i),
       .dbg_enabled_o(dbg_enabled_o),
       .dbg_insn_i(dbg_insn_i),
+      .dbg_insn_set_i(dbg_insn_set_i),
+      .dbg_insn_ready_o(dbg_insn_ready_o),
       .x_dbg_toggle(x2f_dbg_toggle)
       );
 
@@ -332,12 +331,9 @@ module urv_cpu
       .timer_tick_i (sys_tick),
 
       // Debug mailboxes
-      .dbg_mbxi_data_i(dbg_mbxi_data_i),
-      .dbg_mbxi_write_i(dbg_mbxi_write_i),
-      .dbg_mbxi_full_o(dbg_mbxi_full_o),
-      .dbg_mbxo_data_o(dbg_mbxo_data_o),
-      .dbg_mbxo_read_i(dbg_mbxo_read_i),
-      .dbg_mbxo_full_o(dbg_mbxo_full_o)
+      .dbg_mbx_data_i(dbg_mbx_data_i),
+      .dbg_mbx_write_i(dbg_mbx_write_i),
+      .dbg_mbx_data_o(dbg_mbx_data_o)
    );
 
    // Execute 2/Writeback stage
@@ -347,7 +343,6 @@ module urv_cpu
       .rst_i(rst_i),
 
       // pipe control
-      .w_stall_i(w_stall),
       .w_stall_req_o(w_stall_req),
 
       // from X1 stage
@@ -405,9 +400,8 @@ module urv_cpu
 
    // pipeline control
    assign f_stall = x_stall_req || w_stall_req || d_stall_req;
-   assign x_stall = x_stall_req || w_stall_req;
    assign d_stall = x_stall_req || w_stall_req;
-   assign w_stall = 0;
+   assign x_stall = x_stall_req || w_stall_req;
 
    assign x_kill = x2f_bra || x2f_bra_d0 || x2f_bra_d1;
    assign d_kill = x2f_bra || x2f_bra_d0;

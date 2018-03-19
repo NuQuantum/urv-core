@@ -28,7 +28,6 @@ module urv_writeback
    input 	     clk_i,
    input 	     rst_i,
 
-   input 	     w_stall_i,
    output 	     w_stall_req_o,
 
    input [2:0] 	     x_fun_i,
@@ -113,13 +112,10 @@ module urv_writeback
        rf_rd_value <= x_rd_value_i;
 
    always@*
-     if (w_stall_i)
-       rf_rd_write <= 0;
-     else if (x_load_i && dm_load_done_i)
+     if (x_load_i && dm_load_done_i)
        rf_rd_write <= x_valid_i;
      else
        rf_rd_write <= x_rd_write_i & x_valid_i;
-
 
    assign rf_rd_write_o = rf_rd_write;
    assign rf_rd_value_o = rf_rd_value;

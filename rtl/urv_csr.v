@@ -55,20 +55,13 @@ module urv_csr
    input [31:0]  csr_mcause_i,
 
    //  Debug mailboxes
-   input [31:0]  dbg_mbxi_data_i,
-   input         dbg_mbxi_write_i,
-   output        dbg_mbxi_full_o,
-   output [31:0] dbg_mbxo_data_o,
-   input         dbg_mbxo_read_i,
-   output        dbg_mbxo_full_o
+   input [31:0]      dbg_mbx_data_i,
+   input             dbg_mbx_write_i,
+   output [31:0]     dbg_mbx_data_o
    );
 
    reg [31:0] 	csr_mscratch;
-   reg [31:0]   csr_dbg_scratch;
-   reg [31:0]   mbxo_data;
-   reg [31:0]   mbxi_data;
-   reg          mbxo_valid;
-   reg          mbxi_valid;
+   reg [31:0]   mbx_data;
 
    reg [31:0] 	csr_in1;
    reg [31:0] 	csr_in2;
@@ -87,10 +80,7 @@ module urv_csr
        `CSR_ID_MCAUSE: csr_in1 <= csr_mcause_i;
        `CSR_ID_MIP: csr_in1 <= csr_mip_i;
        `CSR_ID_MIE: csr_in1 <= csr_mie_i;
-       `CSR_ID_DBGSTATUS: csr_in1 <= {30'b0, mbxo_valid, mbxi_valid};
-       `CSR_ID_DBGSCRATCH: csr_in1 <= csr_dbg_scratch;
-       `CSR_ID_DBGMBXI: csr_in1 <= mbxi_data;
-       `CSR_ID_DBGMBXO: csr_in1 <= mbxo_data;
+       `CSR_ID_DBGMBX: csr_in1 <= mbx_data;
        default: csr_in1 <= 32'hx;
      endcase // case (d_csr_sel_i)
 
@@ -128,41 +118,23 @@ module urv_csr
      if(rst_i)
        begin
           csr_mscratch <= 0;
-          csr_dbg_scratch <= 0;
-          mbxo_data <= 0;
-          mbxi_data <= 0;
-          mbxo_valid <= 0;
-          mbxi_valid <= 0;
+          mbx_data <= 0;
        end
      else
        begin
-          if (dbg_mbxo_read_i)
-            mbxo_valid <= 0;
-          if (dbg_mbxi_write_i)
-            begin
-               mbxi_data <= dbg_mbxi_data_i;
-               mbxi_valid <= 1;
-            end
+          if (dbg_mbx_write_i)
+            mbx_data <= dbg_mbx_data_i;
 
           if(!x_stall_i && !x_kill_i && d_is_csr_i)
             case (d_csr_sel_i)
 	      `CSR_ID_MSCRATCH:
 	        csr_mscratch <= csr_out;
-              `CSR_ID_DBGSCRATCH:
-                csr_dbg_scratch <= csr_out;
-              `CSR_ID_DBGMBXO:
-                begin
-                   mbxo_data <= csr_out;
-                   mbxo_valid <= 1;
-                end
-              `CSR_ID_DBGMBXI:
-                mbxi_valid <= 0;
+              `CSR_ID_DBGMBX:
+                mbx_data <= csr_out;
             endcase // case (d_csr_sel_i)
        end // else: !if(rst_i)
 
-   assign dbg_mbxo_data_o = mbxo_data;
-   assign dbg_mbxo_full_o = mbxo_valid;
-   assign dbg_mbxi_full_o = mbxi_valid;
+   assign dbg_mbx_data_o = mbx_data;
 
    assign x_csr_write_value_o = csr_out;
 endmodule
