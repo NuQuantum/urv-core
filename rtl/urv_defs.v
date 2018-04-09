@@ -16,21 +16,21 @@
 
  You should have received a copy of the GNU Lesser General Public
  License along with this library.
-
+ 
 */
 
 `include "urv_config.v"
 
 //  opcodes (bits[6:2], bits[1:0] == 2'b11)
 `define OPC_OP_IMM 5'b00100
-`define OPC_LUI    5'b01101
-`define OPC_AUIPC  5'b00101
-`define OPC_OP     5'b01100
-`define OPC_JAL    5'b11011
-`define OPC_JALR   5'b11001
+`define OPC_LUI 5'b01101
+`define OPC_AUIPC 5'b00101
+`define OPC_OP 5'b01100
+`define OPC_JAL 5'b11011
+`define OPC_JALR 5'b11001
 `define OPC_BRANCH 5'b11000
-`define OPC_LOAD   5'b00000
-`define OPC_STORE  5'b01000
+`define OPC_LOAD 5'b00000
+`define OPC_STORE 5'b01000
 `define OPC_SYSTEM 5'b11100
 
 `define BRA_EQ 3'b000
@@ -65,17 +65,17 @@
 `define FUNC_REM 3'b110
 `define FUNC_REMU 3'b111
 
-`define RD_SOURCE_ALU 3'b000
+`define RD_SOURCE_ALU 3'b000 
 `define RD_SOURCE_SHIFTER 3'b010
 `define RD_SOURCE_MULTIPLY 3'b001
-//  `define RD_SOURCE_DIVIDE 3'b011 ?? conflict with CSR
+`define RD_SOURCE_DIVIDE 3'b100
 `define RD_SOURCE_CSR 3'b011
+`define RD_SOURCE_MULH 3'b111
 
-//  CSR addresses
 `define CSR_ID_CYCLESH 12'hc80
-`define CSR_ID_CYCLESL 12'hc00
+`define CSR_ID_CYCLESL 12'hc00 
 `define CSR_ID_TIMEH 12'hc81
-`define CSR_ID_TIMEL 12'hc01
+`define CSR_ID_TIMEL 12'hc01 
 `define CSR_ID_MSCRATCH 12'h340
 `define CSR_ID_MEPC 12'h341
 `define CSR_ID_MSTATUS 12'h300

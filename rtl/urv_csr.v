@@ -16,7 +16,7 @@
 
  You should have received a copy of the GNU Lesser General Public
  License along with this library.
-
+ 
 */
 
 `include "urv_defs.v"
@@ -25,49 +25,49 @@
 
 module urv_csr
   (
-   input         clk_i,
-   input         rst_i,
+   input 	     clk_i,
+   input 	     rst_i,
 
-   input         x_stall_i,
-   input         x_kill_i,
-
-   input         d_is_csr_i,
-   input [2:0]   d_fun_i,
-   input [4:0]   d_csr_imm_i,
-   input [11:0]  d_csr_sel_i,
-
-
-   input [31:0]  d_rs1_i,
-
-   output [31:0] x_rd_o,
-
-   input [39:0]  csr_time_i,
-   input [39:0]  csr_cycles_i,
+   input 	     x_stall_i,
+   input 	     x_kill_i,
+   
+   input 	     d_is_csr_i,
+   input [2:0] 	     d_fun_i,
+   input [4:0] 	     d_csr_imm_i,
+   input [11:0]      d_csr_sel_i,
+   
+   
+   input [31:0]      d_rs1_i,
+   
+   output [31:0]     x_rd_o,
+   
+   input [39:0]      csr_time_i,
+   input [39:0]      csr_cycles_i,
 
    // interrupt management
 
-   output [31:0] x_csr_write_value_o,
+   output [31:0]     x_csr_write_value_o,
 
-   input [31:0]  csr_mstatus_i,
-   input [31:0]  csr_mip_i,
-   input [31:0]  csr_mie_i,
-   input [31:0]  csr_mepc_i,
-   input [31:0]  csr_mcause_i,
+   input [31:0]      csr_mstatus_i,
+   input [31:0]      csr_mip_i,
+   input [31:0]      csr_mie_i,
+   input [31:0]      csr_mepc_i,
+   input [31:0]      csr_mcause_i,
 
    //  Debug mailboxes
    input [31:0]      dbg_mbx_data_i,
    input             dbg_mbx_write_i,
    output [31:0]     dbg_mbx_data_o
    );
-
-   reg [31:0] 	csr_mscratch;
+   
+   reg [31:0] 	csr_mscratch; 
    reg [31:0]   mbx_data;
 
    reg [31:0] 	csr_in1;
    reg [31:0] 	csr_in2;
    reg [31:0] 	csr_out;
 
-
+  
    always@*
      case(d_csr_sel_i) // synthesis full_case parallel_case
        `CSR_ID_CYCLESL: csr_in1 <= csr_cycles_i[31:0];
@@ -86,6 +86,9 @@ module urv_csr
 
    assign x_rd_o = csr_in1;
 
+   genvar 	i;
+
+   
    always@*
      case (d_fun_i)
        `CSR_OP_CSRRWI,
@@ -96,25 +99,32 @@ module urv_csr
 	 csr_in2 <= d_rs1_i;
      endcase // case (d_fun_i)
 
-   always@*
-     case(d_fun_i) // synthesis full_case parallel_case
-       `CSR_OP_CSRRWI,
-       `CSR_OP_CSRRW:
-         //  Write
-	 csr_out <= csr_in2;
-       `CSR_OP_CSRRCI,
-        `CSR_OP_CSRRC:
-          //  Clear bits
-	  csr_out <= ~csr_in2 & csr_in1;
-       `CSR_OP_CSRRSI,
-       `CSR_OP_CSRRS:
-         //  Set bits
-	 csr_out <= csr_in2 | csr_in1;
-       default:
-	 csr_out <= 32'hx;
-     endcase // case (d_csr_op_i)
+   generate
 
-   always@(posedge clk_i)
+      
+      for (i=0;i<32;i=i+1) 
+	begin : gen_csr_bits
+
+	   always@*
+	     case(d_fun_i) // synthesis full_case parallel_case
+	       `CSR_OP_CSRRWI, 
+	       `CSR_OP_CSRRW:
+		 csr_out[i] <= csr_in2[i];
+	       `CSR_OP_CSRRCI,
+	       `CSR_OP_CSRRC:
+		 csr_out[i] <= csr_in2[i] ? 1'b0 : csr_in1[i];
+	       `CSR_OP_CSRRSI,
+	       `CSR_OP_CSRRS:
+		 csr_out[i] <= csr_in2[i] ? 1'b1 : csr_in1[i];
+	       default:
+		 csr_out[i] <= 32'hx;
+	     endcase // case (d_csr_op_i)
+	end // for (i=0;i<32;i=i+1)
+      
+      endgenerate
+   
+   
+    always@(posedge clk_i)
      if(rst_i)
        begin
           csr_mscratch <= 0;

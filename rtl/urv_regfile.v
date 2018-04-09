@@ -87,13 +87,13 @@ module urv_regfile
 
    wire [31:0] rs1_regfile;
    wire [31:0] rs2_regfile;
-   wire        write  = (w_rd_store_i && (w_rd_i != 0));
+   wire        write  = (!d_stall_i && w_rd_store_i && (w_rd_i != 0));
 
    urv_regmem bank0
      (
       .clk_i(clk_i),
       .rst_i (rst_i ),
-      .en1_i(!d_stall_i),
+      .en1_i(1'b1),
       .a1_i(rf_rs1_i),
       .q1_o(rs1_regfile),
 
@@ -106,7 +106,7 @@ module urv_regfile
      (
       .clk_i(clk_i),
       .rst_i (rst_i ),
-      .en1_i(!d_stall_i),
+      .en1_i(1'b1),
       .a1_i(rf_rs2_i),
       .q1_o(rs2_regfile),
 

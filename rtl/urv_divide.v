@@ -61,8 +61,8 @@ module urv_divide
    always@*
      case(state) // synthesis full_case parallel_case
        0: begin alu_op1 <= 'hx; alu_op2 <= 'hx; end
-       1: begin alu_op1 <= 0; alu_op2 <= d_rs1_i; end
-       2: begin alu_op1 <= 0; alu_op2 <= d_rs2_i; end
+       1: begin alu_op1 <= 0; alu_op2 <= n; end
+       2: begin alu_op1 <= 0; alu_op2 <= d; end
        35: begin alu_op1 <= 0; alu_op2 <= q; end
        36: begin alu_op1 <= 0; alu_op2 <= r; end
        default: begin alu_op1 <= r_next; alu_op2 <= d; end
@@ -74,15 +74,14 @@ module urv_divide
 
    wire alu_ge = ~alu_result [32];
 
-   wire start_divide = !x_stall_i && !x_kill_i && d_valid_i && d_is_divide_i;
-
    wire done = (is_rem ? state == 37 : state == 36 );
+   wire busy = ( state != 0 && !done );
+   wire start_divide = !x_kill_i && d_valid_i && d_is_divide_i && !busy;
 
-
-   assign x_stall_req_o = (start_divide || !done);
+   assign x_stall_req_o = (d_valid_i && d_is_divide_i && !done);
 
    always@*
-     case (state) // synthesis full_case parallel_case
+     case (state) 
        1:
 	 alu_sub <= n_sign;
        2:
@@ -95,8 +94,6 @@ module urv_divide
 	 alu_sub <= 1;
      endcase // case (state)
 
-
-
    always@(posedge clk_i)
      if(rst_i || done)
        state <= 0;
@@ -104,7 +101,7 @@ module urv_divide
        state <= state + 1;
 
    always@(posedge clk_i)
-	  case ( state ) // synthesis full_case parallel_case
+	  case ( state )
 	    0:
 	      if(start_divide)
 	      begin
@@ -113,14 +110,24 @@ module urv_divide
 
 		 is_rem <= (d_fun_i == `FUNC_REM || d_fun_i ==`FUNC_REMU);
 
-		 n_sign <= d_rs1_i[31];
-		 d_sign <= d_rs2_i[31];
+		 n <= d_rs1_i;
+		 d <= d_rs2_i;
+		 
+		 if( d_fun_i == `FUNC_DIVU || d_fun_i == `FUNC_REMU )
+		   begin
+		      n_sign <= 0;
+		      d_sign <= 0;
+		   end else begin
+		      n_sign <= d_rs1_i[31];
+		      d_sign <= d_rs2_i[31];
+		   end
+		 
 	      end
 
-	    1:
+	    1: 
 		n <= alu_result[31:0];
 
-	    2:
+	    2: 
 		d <= alu_result[31:0];
 
 	    35:

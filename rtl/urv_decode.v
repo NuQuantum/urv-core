@@ -16,60 +16,65 @@
 
  You should have received a copy of the GNU Lesser General Public
  License along with this library.
-
+ 
 */
 
 `include "urv_defs.v"
 
 `timescale 1ns/1ps
 
-module urv_decode
+module urv_decode 
 (
- input             clk_i,
- input             rst_i,
+ input 		   clk_i,
+ input 		   rst_i,
 
  // pipeline control
- input             d_stall_i,
- input             d_kill_i,
- output            d_stall_req_o,
+ input 		   d_stall_i,
+ input 		   d_kill_i,
+ output 	   d_stall_req_o,
 
  // from Fetch stage
- input [31:0]      f_ir_i,
- input [31:0]      f_pc_i,
- input             f_valid_i,
+ input [31:0] 	   f_ir_i,
+ input [31:0] 	   f_pc_i,
+ input 		   f_valid_i,
 
- // to Register File (not registered: direct from fetch stage).
- output [4:0]      rf_rs1_o,
- output [4:0]      rf_rs2_o,
+ // to Register File
+ output [4:0] 	   rf_rs1_o,
+ output [4:0] 	   rf_rs2_o,
 
  // to Execute 1 stage
- output            x_valid_o,
+ output 	   x_valid_o,
  output reg [31:0] x_pc_o,
 
- output [4:0]      x_rs1_o,
- output [4:0]      x_rs2_o,
- output [4:0]      x_rd_o,
+ output [4:0] 	   x_rs1_o,
+ output [4:0] 	   x_rs2_o,
+ output [4:0] 	   x_rd_o,
  output reg [2:0]  x_fun_o,
- output [4:0]      x_opcode_o,
- output reg        x_shifter_sign_o,
- output reg        x_is_signed_alu_op_o,
- output reg        x_is_add_o,
- output reg        x_is_load_o,
- output reg        x_is_store_o,
- output reg        x_is_undef_o,
+ output [4:0] 	   x_opcode_o,
+ output reg 	   x_shifter_sign_o,
+ output reg 	   x_is_signed_alu_op_o,
+ output reg 	   x_is_add_o,
+ output reg 	   x_is_load_o,
+ output reg 	   x_is_store_o,
+ output reg 	   x_is_undef_o,
  output reg [2:0]  x_rd_source_o,
- output            x_rd_write_o,
+ output 	   x_rd_write_o,
  output reg [11:0] x_csr_sel_o,
  output reg [4:0]  x_csr_imm_o,
- output reg        x_is_csr_o,
+ output reg 	   x_is_csr_o,
  output reg        x_is_mret_o,
  output reg        x_is_ebreak_o,
  output reg [31:0] x_imm_o,
  output reg [31:0] x_alu_op1_o,
  output reg [31:0] x_alu_op2_o,
- output reg        x_use_op1_o,
- output reg        x_use_op2_o
+ output reg 	   x_use_op1_o,
+ output reg 	   x_use_op2_o,
+ output reg 	   x_is_divide_o,
+ output reg 	   x_is_multiply_o
 );
+
+   parameter g_with_hw_div = 0;
+   parameter g_with_hw_mulh = 0;
 
    wire [4:0] f_rs1 = f_ir_i[19:15];
    wire [4:0] f_rs2 = f_ir_i[24:20];
@@ -77,7 +82,7 @@ module urv_decode
 
    wire [4:0] d_opcode = f_ir_i[6:2];
    wire [2:0] d_fun = f_ir_i[14:12];
-
+	      
    reg [4:0]  x_rs1;
    reg [4:0]  x_rs2;
    reg [4:0]  x_rd;
@@ -85,8 +90,8 @@ module urv_decode
    reg 	      x_valid;
    reg 	      x_is_shift;
    reg 	      x_rd_write;
-
-
+   
+   
    assign x_rs1_o = x_rs1;
    assign x_rs2_o = x_rs2;
    assign x_rd_o = x_rd;
@@ -98,14 +103,13 @@ module urv_decode
 
    reg 	      load_hazard;
 
-   wire d_is_shift = (d_fun == `FUNC_SL || d_fun == `FUNC_SR) &&
+   wire d_is_shift = !f_ir_i[25] && (d_fun == `FUNC_SL || d_fun == `FUNC_SR) &&
 	(d_opcode == `OPC_OP || d_opcode == `OPC_OP_IMM );
 
    reg 	x_is_mul;
    wire d_is_mul = (f_ir_i[25] && d_fun == `FUNC_MUL);
 
-   // hazard detect combinatorial logic
-   // x_rd, x_is_shift, x_is_mul is from the previous instruction.
+   // hazzard detect combinatorial logic
    always@*
      if ( x_valid && f_valid_i && ( (f_rs1 == x_rd)  || (f_rs2 == x_rd) ) && (!d_kill_i) )
        begin
@@ -124,7 +128,7 @@ module urv_decode
        end
      else
 	 load_hazard <= 0;
-
+   
    reg 	inserting_nop;
 
    // bubble insertion following a hazard (only 1 bubble).
@@ -136,11 +140,11 @@ module urv_decode
 
    assign d_stall_req_o = load_hazard && !inserting_nop;
 
-
+   
    assign x_valid_o = x_valid;
-
+   
    always@(posedge clk_i)
-     if(rst_i || d_kill_i)
+     if(rst_i || d_kill_i )
        begin
 	  x_pc_o <= 0;
 	  x_valid <= 0;
@@ -159,7 +163,7 @@ module urv_decode
 	  x_rd <= f_rd;
 	  x_opcode <= d_opcode;
        end
-
+   
    // ALU function decoding
    // attempt to reuse ALU for jump address generation
    always@(posedge clk_i)
@@ -170,22 +174,22 @@ module urv_decode
 	 default:
 	   x_fun_o <= d_fun;
        endcase // case (f_opcode)
-
+   
    always@(posedge clk_i)
      if(!d_stall_i)
        x_shifter_sign_o <= f_ir_i[30];
 
-   wire [31:0] d_imm_i = { {21{ f_ir_i[31] }}, f_ir_i[30:25], f_ir_i[24:21], f_ir_i[20] };
+   wire[31:0] d_imm_i = { {21{ f_ir_i[31] }}, f_ir_i[30:25], f_ir_i[24:21], f_ir_i[20] };
    wire [31:0] d_imm_s = { {21{ f_ir_i[31] }}, f_ir_i[30:25], f_ir_i[11:8], f_ir_i[7] };
    wire [31:0] d_imm_b = { {20{ f_ir_i[31] }}, f_ir_i[7], f_ir_i[30:25], f_ir_i[11:8], 1'b0 };
    wire [31:0] d_imm_u = { f_ir_i[31], f_ir_i[30:20], f_ir_i[19:12], 12'h000 };
-   wire [31:0] d_imm_j = { {12{f_ir_i[31]}},
-			   f_ir_i[19:12],
+   wire [31:0] d_imm_j = { {12{f_ir_i[31]}}, 
+			   f_ir_i[19:12], 
 			   f_ir_i[20], f_ir_i[30:25], f_ir_i[24:21], 1'b0};
 
-
+   
    reg [31:0] d_imm;
-
+   
 
    // Immediate decode, comb part
    always@*
@@ -203,27 +207,27 @@ module urv_decode
    always@(posedge clk_i)
      if(!d_stall_i)
        x_imm_o <= d_imm;
-
+   
 
    // ALU operand decoding
    always@(posedge clk_i)
      if(!d_stall_i)
        begin
 	  case (d_opcode)
-	    `OPC_LUI, `OPC_AUIPC:
+	    `OPC_LUI, `OPC_AUIPC: 
 	      begin
-		 x_alu_op1_o <= d_imm;
+		 x_alu_op1_o <= d_imm; 
 		 x_use_op1_o <= 1;
 	      end
 	    `OPC_JAL, `OPC_JALR:
 	      begin
-		 x_alu_op1_o <= 4;
+		 x_alu_op1_o <= 4; 
 		 x_use_op1_o <= 1;
 	      end
-
+	    
 	    default:
 	      begin
-		 x_alu_op1_o <= 32'hx;
+		 x_alu_op1_o <= 32'hx; 
 		 x_use_op1_o <= 0;
 	      end
 	  endcase // case (d_opcode)
@@ -239,7 +243,7 @@ module urv_decode
 		 x_alu_op2_o <= f_pc_i;
 		 x_use_op2_o <= 1;
 	      end
-
+	    
 	    `OPC_OP_IMM:
 	      begin
 		 x_alu_op2_o <= d_imm;
@@ -248,15 +252,15 @@ module urv_decode
 
 	    default:
 	      begin
-		 x_alu_op2_o <= 32'hx;
+		 x_alu_op2_o <= 32'hx; 
 		 x_use_op2_o <= 0;
 	      end
 	  endcase // case (d_opcode_i)
        end // if (!d_stall_i)
-
-
+   
+   
    wire d_rd_nonzero = (f_rd != 0);
-
+   
    // misc decoding
    always@(posedge clk_i)
      if(!d_stall_i)
@@ -265,7 +269,7 @@ module urv_decode
 
 	  x_is_load_o <= d_opcode == `OPC_LOAD && !load_hazard;
 	  x_is_store_o <= d_opcode == `OPC_STORE && !load_hazard;
-
+	  
 	  x_is_mul <= d_is_mul;
 
 	  case (d_opcode)
@@ -286,18 +290,65 @@ module urv_decode
 	      x_is_add_o <= 1;
 	  endcase // case (d_opcode)
 
-	  // all multiply/divide instructions except MUL
-	  x_is_undef_o <= (d_opcode == `OPC_OP && f_ir_i[25] && d_fun != `FUNC_MUL);
+	  // all multiply/divide instructions except
+	  if( d_opcode == `OPC_OP && f_ir_i[25] )
+	    begin
+	       case (d_fun)
+		 `FUNC_MUL:
+		   begin
+		      x_is_multiply_o <= 1;
+		      x_is_divide_o <= 0;
+		      x_is_undef_o <= 0;
+		   end
+		 `FUNC_MULH, `FUNC_MULHU, `FUNC_MULHSU:
+		   begin
+		      x_is_multiply_o <= 1;
+		      x_is_undef_o <= !g_with_hw_mulh;
+		   end
 
+		 `FUNC_DIV, `FUNC_DIVU, `FUNC_REM, `FUNC_REMU:
+		   begin
+		      x_is_multiply_o <= 0;
+		      x_is_divide_o <= 1;
+		      x_is_undef_o <= !g_with_hw_div;
+		   end
+
+		 default:
+		   begin
+		      x_is_multiply_o <= 0;
+		      x_is_divide_o <= 0;
+		      x_is_undef_o <= 0;
+		   end
+		 
+
+	       endcase // case (d_fun)
+	    end else begin // if ( d_opcode == `OPC_OP && f_ir_i[25] )
+	       x_is_multiply_o <= 0;
+	       x_is_divide_o <= 0;
+	       x_is_undef_o <= 0;
+	    end // else: !if( d_opcode == `OPC_OP && f_ir_i[25] )
+
+	  
 	  if(d_is_shift)
 	    x_rd_source_o <= `RD_SOURCE_SHIFTER;
 	  else if (d_opcode == `OPC_SYSTEM)
 	    x_rd_source_o <= `RD_SOURCE_CSR;
-	  else if (d_opcode == `OPC_OP && !d_fun[2] && f_ir_i[25])
-	    x_rd_source_o <= `RD_SOURCE_MULTIPLY;
+	  else if (d_opcode == `OPC_OP && f_ir_i[25])
+	    begin
+	       if( !d_fun[2] )
+		 begin
+		    if( d_fun == `FUNC_MUL )
+		      x_rd_source_o <= `RD_SOURCE_MULTIPLY;
+		    else
+		      x_rd_source_o <= `RD_SOURCE_MULH;
+		 end
+	       
+	       else
+		 x_rd_source_o <= `RD_SOURCE_DIVIDE;
+	    end
 	  else
 	    x_rd_source_o <= `RD_SOURCE_ALU;
-
+	  
 	  // rdest write value
 	  case (d_opcode)
 	    `OPC_OP_IMM, `OPC_OP, `OPC_JAL, `OPC_JALR, `OPC_LUI, `OPC_AUIPC:
@@ -308,19 +359,19 @@ module urv_decode
 	      x_rd_write <= 0;
 	  endcase // case (d_opcode)
        end // if (!d_stall_i)
-
-
+   
+	
    // CSR/supervisor instructions
    always@(posedge clk_i)
-     if (!d_stall_i)
-       begin
-	  x_csr_imm_o <= f_ir_i[19:15];
-	  x_csr_sel_o <= f_ir_i[31:20];
-	  x_is_csr_o <= (d_opcode == `OPC_SYSTEM) && (d_fun != 0);
-	  x_is_mret_o <= (d_opcode == `OPC_SYSTEM) && (d_fun == 0) && (f_ir_i [31:20] == 12'b0011000_00010);
-          x_is_ebreak_o <= (d_opcode == `OPC_SYSTEM) && (d_fun == 0) && (f_ir_i [31:20] == 12'b0000000_00001);
-       end
-
+	if (!d_stall_i)
+	  begin
+	     x_csr_imm_o <= f_ir_i[19:15];
+	     x_csr_sel_o <= f_ir_i[31:20];
+	     x_is_csr_o <= (d_opcode == `OPC_SYSTEM) && (d_fun != 0);
+	     x_is_mret_o <= (d_opcode == `OPC_SYSTEM) && (d_fun == 0) && (f_ir_i [31:20] == 12'b0011000_00010);
+             x_is_ebreak_o <= (d_opcode == `OPC_SYSTEM) && (d_fun == 0) && (f_ir_i [31:20] == 12'b0000000_00001);
+	  end
+   
    assign x_rd_write_o = x_rd_write;
 
 endmodule // rv_decode

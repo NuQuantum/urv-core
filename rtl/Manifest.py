@@ -1,4 +1,5 @@
 files = [ "urv_cpu.v",
+          "urv_divide.v",
           "urv_exec.v",
           "urv_fetch.v",
           "urv_decode.v",
