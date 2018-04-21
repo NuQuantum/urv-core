@@ -114,6 +114,7 @@ module urv_exec
 
    parameter g_with_hw_mulh = 0;
    parameter g_with_hw_div = 0;
+   parameter g_with_hw_debug = 0;
    
    wire [31:0] 	 rs1, rs2;
 
@@ -151,7 +152,10 @@ module urv_exec
 
    reg [31:0] exception_pc;
 
-   urv_csr csr_regs
+   urv_csr 
+     #(
+       .g_with_hw_debug(g_with_hw_debug)
+       ) csr_regs
      (
       
       .clk_i(clk_i),
@@ -240,7 +244,7 @@ module urv_exec
        branch_target <= exception_address;
      else if (x_exception)
        branch_target <= `URV_TRAP_VECTOR;
-     else if (d_is_ebreak_i)
+     else if (d_is_ebreak_i && g_with_hw_debug)
        branch_target <= d_pc_i;
      else 
        branch_target <= dm_addr;
@@ -473,7 +477,7 @@ module urv_exec
 	 `OPC_BRANCH:
 	   branch_take <= branch_condition_met;
          `OPC_SYSTEM:
-           branch_take <= d_is_mret_i || (d_is_ebreak_i && !d_dbg_mode_i);
+           branch_take <= d_is_mret_i || (g_with_hw_debug && d_is_ebreak_i && !d_dbg_mode_i);
 	 default: 
 	   branch_take <= 0;
        endcase // case (d_opcode_i)
@@ -502,7 +506,7 @@ module urv_exec
      end else if (!x_stall_i) begin
 	  f_branch_target_o <= branch_target;
 	  f_branch_take <= branch_take && !x_kill_i && d_valid_i;
-          f_dbg_toggle_o <= d_is_ebreak_i && !x_kill_i && d_valid_i;
+          f_dbg_toggle_o <= g_with_hw_debug && d_is_ebreak_i && !x_kill_i && d_valid_i;
           w_rd_o <= d_rd_i;
 	  w_rd_value_o <= rd_value;
 

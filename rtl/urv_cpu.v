@@ -30,6 +30,7 @@ module urv_cpu
     parameter g_with_hw_div = 1,
     parameter g_with_hw_mulh = 1,
     parameter g_with_hw_debug = 0,
+    parameter g_with_compressed_insns = 0,
     parameter g_debug_breakpoints = 6
    ) 
    (
@@ -146,7 +147,11 @@ module urv_cpu
    // misc stuff
    wire [39:0] 	 csr_time, csr_cycles;
    
-   urv_fetch fetch
+   urv_fetch 
+    #(
+      .g_with_hw_debug(g_with_hw_debug),
+      .g_with_compressed_insns(g_with_compressed_insns) )
+      fetch
      (
       .clk_i(clk_i),
       .rst_i(rst_i),
@@ -173,7 +178,7 @@ module urv_cpu
       .dbg_insn_i(dbg_insn_i),
       .dbg_insn_set_i(dbg_insn_set_i),
       .dbg_insn_ready_o(dbg_insn_ready_o),
-      .x_dbg_toggle(x2f_dbg_toggle)
+      .x_dbg_toggle_i(x2f_dbg_toggle)
       );
 
 
@@ -412,5 +417,15 @@ module urv_cpu
 
    assign x_kill = x2f_bra || x2f_bra_d0 || x2f_bra_d1;
    assign d_kill = x2f_bra || x2f_bra_d0;
+
+   generate
+      if( !g_with_hw_debug )
+	begin
+	   assign dbg_enabled_o = 1'b0;
+	   assign dbg_insn_ready_o = 1'b0;
+	   assign dbg_mbx_data_o = 32'h0;
+	end
+      endgenerate
+   
    
 endmodule // urv_cpu

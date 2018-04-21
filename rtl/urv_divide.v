@@ -73,7 +73,8 @@ module urv_divide
    assign alu_result = alu_sub ? {1'b0, alu_op1} - {1'b0, alu_op2} : {1'b0, alu_op1} + {1'b0, alu_op2};
 
    wire alu_ge = ~alu_result [32];
-
+   wire alu_eq = alu_result == 0;
+   
    wire done = (is_rem ? state == 37 : state == 36 );
    wire busy = ( state != 0 && !done );
    wire start_divide = !x_kill_i && d_valid_i && d_is_divide_i && !busy;
@@ -100,11 +101,14 @@ module urv_divide
      else if (state != 0 || start_divide)
        state <= state + 1;
 
+   reg 	is_div_by_zero;
+   
    always@(posedge clk_i)
 	  case ( state )
 	    0:
 	      if(start_divide)
-	      begin
+		begin
+		   is_div_by_zero <= 0;
 		 q <= 0;
 		 r <= 0;
 
@@ -127,16 +131,20 @@ module urv_divide
 	    1: 
 		n <= alu_result[31:0];
 
-	    2: 
-		d <= alu_result[31:0];
+	    2:
+	      begin
+		 d <= alu_result[31:0];
+		 is_div_by_zero = alu_eq && (d_fun_i == `FUNC_DIV);
+	      end
+	    
 
 	    35:
-	      x_rd_o <= alu_result; // quotient
+	      x_rd_o <= is_div_by_zero ? -1 : alu_result; // quotient
 
 	    36:
 	      x_rd_o <= alu_result; // remainder
 
-	    default: // 3..34: 32 divider iterations
+	    default: // 3..345 32 divider iterations
 	      begin
 
 		 q <= { q[30:0], alu_ge };

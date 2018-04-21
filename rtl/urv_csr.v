@@ -59,6 +59,8 @@ module urv_csr
    input             dbg_mbx_write_i,
    output [31:0]     dbg_mbx_data_o
    );
+
+   parameter g_with_hw_debug;
    
    reg [31:0] 	csr_mscratch; 
    reg [31:0]   mbx_data;
@@ -80,8 +82,8 @@ module urv_csr
        `CSR_ID_MCAUSE: csr_in1 <= csr_mcause_i;
        `CSR_ID_MIP: csr_in1 <= csr_mip_i;
        `CSR_ID_MIE: csr_in1 <= csr_mie_i;
-       `CSR_ID_DBGMBX: csr_in1 <= mbx_data;
-       default: csr_in1 <= 32'hx;
+       `CSR_ID_DBGMBX: csr_in1 <= g_with_hw_debug ? mbx_data : 32'h0;
+       default: csr_in1 <= 32'h0;
      endcase // case (d_csr_sel_i)
 
    assign x_rd_o = csr_in1;
@@ -132,7 +134,7 @@ module urv_csr
        end
      else
        begin
-          if (dbg_mbx_write_i)
+          if (dbg_mbx_write_i && g_with_hw_debug)
             mbx_data <= dbg_mbx_data_i;
 
           if(!x_stall_i && !x_kill_i && d_is_csr_i)
@@ -140,7 +142,8 @@ module urv_csr
 	      `CSR_ID_MSCRATCH:
 	        csr_mscratch <= csr_out;
               `CSR_ID_DBGMBX:
-                mbx_data <= csr_out;
+		if(g_with_hw_debug)
+                  mbx_data <= csr_out;
             endcase // case (d_csr_sel_i)
        end // else: !if(rst_i)
 

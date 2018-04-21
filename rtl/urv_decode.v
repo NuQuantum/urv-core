@@ -75,6 +75,7 @@ module urv_decode
 
    parameter g_with_hw_div = 0;
    parameter g_with_hw_mulh = 0;
+   parameter g_with_hw_debug = 0;
 
    wire [4:0] f_rs1 = f_ir_i[19:15];
    wire [4:0] f_rs2 = f_ir_i[24:20];
@@ -369,7 +370,11 @@ module urv_decode
 	     x_csr_sel_o <= f_ir_i[31:20];
 	     x_is_csr_o <= (d_opcode == `OPC_SYSTEM) && (d_fun != 0);
 	     x_is_mret_o <= (d_opcode == `OPC_SYSTEM) && (d_fun == 0) && (f_ir_i [31:20] == 12'b0011000_00010);
-             x_is_ebreak_o <= (d_opcode == `OPC_SYSTEM) && (d_fun == 0) && (f_ir_i [31:20] == 12'b0000000_00001);
+
+	     if(g_with_hw_debug)
+               x_is_ebreak_o <= (d_opcode == `OPC_SYSTEM) && (d_fun == 0) && (f_ir_i [31:20] == 12'b0000000_00001);
+	     else
+	       x_is_ebreak_o <= 1'b0;
 	  end
    
    assign x_rd_write_o = x_rd_write;
