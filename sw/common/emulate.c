@@ -26,7 +26,12 @@ void undefined_insn_handler( struct rv_trap_context *ctx )
     else if ( (insn & 0xfe00707f) == 0x2003033 ) // MULHU
         ctx->r[rdi] = ((uint64_t) rs1 * (uint64_t) rs2) >> 32;
     else if ( (insn & 0xfe00707f) == 0x2004033 ) // DIV
+    {
+      if( rs2 == 0 )
+        ctx->r[rdi] = 0xffffffff;
+      else
         ctx->r[rdi] = (int32_t)rs1 / (int32_t) rs2;
+    }
     else if ( (insn & 0xfe00707f) == 0x2005033 ) // DIVU
         ctx->r[rdi] = (uint32_t)rs1 / (uint32_t) rs2;
     else if ( (insn & 0xfe00707f) == 0x2006033 ) // REM
