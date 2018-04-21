@@ -4,7 +4,7 @@ syn_device="xc6slx150t"
 
 action = "simulation"
 target = "xilinx"
-include_dirs=["../../rtl"]
+include_dirs=["../../rtl", "../include"]
 
 vcom_opt="-mixedsvvh l"
 

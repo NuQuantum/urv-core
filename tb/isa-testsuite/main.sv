@@ -19,35 +19,89 @@
 */
 
 `include "urv_defs.v"
+`include "logger.svh"
 
 `timescale 1ns/1ps
 
-module main;
+`define CFG_WITH_HW_MULH  'h1
+`define CFG_WITH_HW_DIV   'h2
+`define CFG_WITH_HW_DEBUG 'h4
+`define CFG_WITH_COMPRESSED_INSNS 'h8
 
+module ICpuTestWrapper
+(
+ input clk_i
+  );
 
-   reg clk = 0;
    reg rst = 1;
+   
+   
+   reg r_with_hw_mulh = 0;
+   reg r_with_hw_divide = 0;
+   reg r_with_hw_debug = 0;
 
-   wire [31:0] im_addr;
+   reg irq = 0;
+   
+   parameter int n_configs = 8;
+   parameter int mem_size = 16384;
+   
+   wire [31:0] im_addr_m[n_configs];
+   wire [31:0] dm_addr_m[n_configs];
+   wire [31:0] dm_data_s_m[n_configs];
+   wire [3:0]  dm_data_select_m[n_configs];
+   wire        dm_write_m[n_configs];
+   wire        irq_m[n_configs];
+
+   int 	       r_active_cpu = 0;
+   
+
+   reg [31:0] im_addr;
    reg [31:0] im_data;
    reg        im_valid;
 
-
-   wire [31:0] dm_addr;
-   wire [31:0] dm_data_s;
+   reg [31:0] dm_addr;
+   reg [31:0] dm_data_s;
    reg [31:0] dm_data_l;
-   wire [3:0]  dm_data_select;
-   wire        dm_write;
+   reg [3:0]  dm_data_select;
+   reg        dm_write;
    reg 	       dm_valid_l = 1;
    reg        dm_ready;
 
-   localparam int mem_size = 16384;
-
    reg [31:0]  mem[0:mem_size - 1];
 
-   task automatic load_ram(string filename);
+   string current_msg;
+   int 	  test_complete = 0;
+
+   task automatic selectConfiguration( int mask );
+      r_active_cpu = mask;
+   endtask // selectConfiguration
+   
+
+   function automatic string getConfigurationString();
+      automatic string rv;
+      
+      if( r_active_cpu & `CFG_WITH_HW_MULH )
+	rv = {rv, "hw_mulh"};
+      if( r_active_cpu & `CFG_WITH_HW_DIV )
+	rv = {rv, " hw_div"};
+      if( r_active_cpu & `CFG_WITH_HW_DEBUG )
+	rv = {rv, " hw_debug"};
+
+      return rv;
+      
+   endfunction // getConfigurationString
+   
+   
+   task automatic runTest(string filename);
       int f = $fopen(filename,"r");
-      int     n, i;
+      int n, i;
+
+      current_msg = "";
+      test_complete = 0;
+      
+      rst <= 1;
+      @(posedge clk_i);
+      @(posedge clk_i);
 
       if( f == 0)
 	begin
@@ -57,22 +111,41 @@ module main;
 
       while(!$feof(f))
         begin
-           int addr, data;
+           int addr, data, r;
            string cmd;
 
-           void'($fscanf(f,"%s %08x %08x", cmd,addr,data));
+           r = $fscanf(f,"%s %08x %08x", cmd,addr,data);
+
+	   if ( r < 0 )
+	     break;
+	   
            if(cmd == "write")
              begin
                 mem[addr % mem_size] = data;
              end
+
         end
-   endtask // load_ram
+      $fclose(f);
+      
+      @(posedge clk_i);
+      rst <= 0;
+      @(posedge clk_i);
 
-   int seed;
+   endtask // runProgram
 
+   function automatic string getTestResult();
+      return current_msg;
+   endfunction // getTestResult
 
+   function automatic int isTestComplete();
+      return test_complete;
+   endfunction // isTestComplete
+   
 
-   always@(posedge clk)
+   int seed = 0;
+   
+
+   always@(posedge clk_i)
      begin
         //  Read memory for insn
 	if(   $dist_uniform(seed, 0, 100 ) <= 100) begin
@@ -96,109 +169,206 @@ module main;
 	dm_data_l <= mem[(dm_addr/4) % mem_size];
      end // always@ (posedge clk)
 
-   urv_cpu DUT
-     (
-      .clk_i(clk),
-      .rst_i(rst),
 
-      .irq_i ( irq ),
+   
+   genvar      i;
 
-      // instruction mem I/F
-      .im_addr_o(im_addr),
-      .im_data_i(im_data),
-      .im_valid_i(im_valid),
-
-      // data mem I/F
-      .dm_addr_o(dm_addr),
-      .dm_data_s_o(dm_data_s),
-      .dm_data_l_i(dm_data_l),
-      .dm_data_select_o(dm_data_select),
-      .dm_store_o(dm_write),
-      .dm_load_o(),
-      .dm_store_done_i(1'b1),
-      .dm_load_done_i(1'b1),
-      .dm_ready_i(dm_ready),
-
-      // Debug
-      .dbg_force_i(1'b0),
-      .dbg_enabled_o(),
-      .dbg_insn_i(32'h0),
-      .dbg_insn_set_i(1'b0),
-      .dbg_insn_ready_o(),
-
-      // Debug mailbox
-      .dbg_mbx_data_i(0),
-      .dbg_mbx_write_i(1'b0),
-      .dbg_mbx_data_o()
-      );
-
-
-   always #5ns clk <= ~clk;
-
-   integer f_console, f_exec_log;
-   reg 	   test_complete = 0;
-
-   initial begin
-      string tests[$];
-      const string test_dir = "../../sw/testsuite/isa";
-
-
-      int          f;
-      int     n, i;
-
-      f_console = $fopen("console.txt","wb");
-
-      f = $fopen( {test_dir,"/tests.lst"} ,"r");
-      while(!$feof(f))
-        begin
-           string fname;
-
-           void'($fscanf(f,"%s", fname));
-	   tests.push_back(fname);
-
-
-        end
-
-
-      for (i=0;i<tests.size();i++)
+   
+   
+   generate
+      for(i = 0; i < n_configs; i++)
 	begin
-           if (tests[i][0] == "#")
-             continue;
-	   rst = 1;
-	   repeat(3) @(posedge clk);
-	   $display("Loading %s", {test_dir,"/",tests[i]} );
-	   load_ram({test_dir,"/",tests[i]});
-	   repeat(3) @(posedge clk);
-	   rst = 0;
-	   test_complete=  0;
+	   urv_cpu 
+	      #(
+		.g_with_hw_mulh( i & `CFG_WITH_HW_MULH ? 1 : 0 ),
+		.g_with_hw_div( i & `CFG_WITH_HW_DIV ? 1 : 0 ),
+		.g_with_hw_debug( i & `CFG_WITH_HW_DEBUG ? 1 : 0 )
+		)
+		DUTx
+	      (
+	       .clk_i(i == r_active_cpu ? clk_i : 1'b0 ),
+	       .rst_i(i == r_active_cpu ? rst : 1'b1 ),
 
-	   while(!test_complete)
-	     #1us;
+	       .irq_i ( irq ),
 
+	       // instruction mem I/F
+	       .im_addr_o(im_addr_m[i]),
+	       .im_data_i(im_data),
+	       .im_valid_i(im_valid),
 
-	end
+	       // data mem I/F
+	       .dm_addr_o(dm_addr_m[i]),
+	       .dm_data_s_o(dm_data_s_m[i]),
+	       .dm_data_l_i(dm_data_l),
+	       .dm_data_select_o(dm_data_select_m[i]),
+	       .dm_store_o(dm_write_m[i]),
+	       .dm_load_o(),
+	       .dm_store_done_i(1'b1),
+	       .dm_load_done_i(1'b1),
+	       .dm_ready_i(dm_ready),
 
-        $display("End of tests");
-        $stop;
-      end // initial begin
+	       // Debug
+	       .dbg_force_i(1'b0),
+	       .dbg_enabled_o(),
+	       .dbg_insn_i(32'h0),
+	       .dbg_insn_set_i(1'b0),
+	       .dbg_insn_ready_o(),
 
+	       // Debug mailbox
+	       .dbg_mbx_data_i(0),
+	       .dbg_mbx_write_i(1'b0),
+	       .dbg_mbx_data_o()
+	       );
+	end // for (i = 0; i < n_configs; i++)
+   endgenerate
 
-   always@(posedge clk)
+   always@*
+     begin
+	im_addr <= im_addr_m[r_active_cpu];
+	dm_addr <= dm_addr_m[r_active_cpu];
+	dm_data_s <= dm_data_s_m[r_active_cpu];
+	dm_data_select <= dm_data_select_m[r_active_cpu];
+	dm_write <= dm_write_m[r_active_cpu];
+     end
+   
+   
+   always@(posedge clk_i)
      if(dm_write)
        begin
+	  automatic bit [7:0] chr = dm_data_s[7:0];
+	  
 	  if(dm_addr == 'h100000)
 	    begin
-	      // $display("\n ****** TX '%c' \n", dm_data_s[7:0]) ;
-	       //	  $fwrite(f_exec_log,"\n ****** TX '%c' \n", dm_data_s[7:0]) ;
-	       $write("%c", dm_data_s[7:0]);
-	       $fwrite(f_console,"%c", dm_data_s[7:0]);
-	       $fflush(f_console);
+	       current_msg = $sformatf("%s%c", current_msg, chr);
 	    end
-	  else if(dm_addr == 'h100004)
+	  else if(DUT.dm_addr == 'h100004)
 	    begin
-//	       $display("Test complete." );
 	       test_complete = 1;
 	    end
        end
+   
+endmodule // ICpuTestWrapper
+
+
+
+
+module main;
+
+
+   reg clk = 0;
+
+   always #5ns clk <= ~clk;
+
+   ICpuTestWrapper DUT ( clk );
+
+class ISATestRunner extends LoggerClient;
+
+   typedef enum 
+		{
+		 R_OK = 0,
+		 R_FAIL = 1,
+		 R_TIMEOUT = 2
+		 } TestStatus;
+   
+   
+   const time 	c_test_timeout = 1ms;
+
+   task automatic runTest(string filename, ref TestStatus  status, ref int failedTest );
+      automatic time t_start = $time;
+
+      DUT.runTest(filename);
+
+      failedTest = 0;
+      
+      while(!DUT.isTestComplete() )
+	begin
+	   #1us;
+	   if ( $time - t_start > c_test_timeout )
+	     begin
+		status = R_TIMEOUT;
+		return;
+	     end
+	end
+
+      if ($sscanf( DUT.getTestResult(), "Test %d failed", failedTest ) == 1)
+	status = R_FAIL;
+      else
+	status = R_OK;
+   endtask // runTest
+
+   task automatic runAllTests( string test_dir, string list_file );
+      automatic string tests[$];
+      automatic int n, i, f, failCount = 0;
+      automatic string  failedTests = "";
+      
+      
+      f = $fopen( $sformatf("%s/%s", test_dir, list_file ) ,"r");
+
+      while(!$feof(f))
+        begin
+           automatic string fname;
+
+           void'($fscanf(f,"%s", fname));
+	   
+	   tests.push_back(fname);
+        end
+
+      for (i=0;i<tests.size();i++)
+	begin
+	   automatic int failedTest;
+	   automatic TestStatus status;
+	   automatic string s;
+	   
+           if (tests[i][0] == "#" || tests[i] == "")
+             continue;
+
+	   runTest({test_dir,"/",tests[i]}, status, failedTest );
+	   
+	   if ( status == R_OK )
+	     s = "PASS";
+	   else if ( status == R_TIMEOUT )
+	     begin
+		s = "Timeout (likely fail due to CPU freeze)";
+		failCount++;
+	     end else begin
+		s = $sformatf ("FAIL (subtest %d)", failedTest );
+		failCount++;
+	     end
+	   
+	   msg(0, $sformatf("%s: %s", tests[i], s ) );
+	   
+	end
+
+      if(failCount)
+	fail ( $sformatf( "%d tests FAILED", failCount ) );
+      else
+	pass();
+
+   endtask // runAllTests
+
+endclass // ISATestRunner
+
+
+   const int n_configs = 8;
+   
+   
+   initial begin
+      automatic int i;
+      automatic ISATestRunner testRunner = new;
+      automatic Logger l = Logger::get();
+
+      for(i=0;i<=7;i++)
+	begin
+	   DUT.selectConfiguration(i);
+	   
+	   l.startTest($sformatf( "Full ISA Test for feature set [%s]", DUT.getConfigurationString() ) );
+	   
+	   testRunner.runAllTests("../../sw/testsuite/isa", "tests.lst" );
+	end
+
+      l.writeTestReport("report.txt");
+      
+   end
+
 
 endmodule // main
