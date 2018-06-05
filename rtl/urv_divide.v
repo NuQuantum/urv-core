@@ -134,7 +134,7 @@ module urv_divide
 	    2:
 	      begin
 		 d <= alu_result[31:0];
-		 is_div_by_zero = alu_eq && (d_fun_i == `FUNC_DIV);
+		 is_div_by_zero <= alu_eq && (d_fun_i == `FUNC_DIV);
 	      end
 	    
 

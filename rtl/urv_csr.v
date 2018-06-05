@@ -60,7 +60,7 @@ module urv_csr
    output [31:0]     dbg_mbx_data_o
    );
 
-   parameter g_with_hw_debug;
+   parameter g_with_hw_debug = 0;
    
    reg [31:0] 	csr_mscratch; 
    reg [31:0]   mbx_data;

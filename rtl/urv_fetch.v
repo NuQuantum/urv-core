@@ -51,8 +51,8 @@ module urv_fetch
  input             x_dbg_toggle_i
 );
 
-   parameter g_with_compressed_insns;
-   parameter g_with_hw_debug;
+   parameter g_with_compressed_insns = 0;
+   parameter g_with_hw_debug = 0;
    
    reg [31:0] pc;
    reg 	      rst_d;

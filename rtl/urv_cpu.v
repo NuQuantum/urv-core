@@ -418,14 +418,4 @@ module urv_cpu
    assign x_kill = x2f_bra || x2f_bra_d0 || x2f_bra_d1;
    assign d_kill = x2f_bra || x2f_bra_d0;
 
-   generate
-      if( !g_with_hw_debug )
-	begin
-	   assign dbg_enabled_o = 1'b0;
-	   assign dbg_insn_ready_o = 1'b0;
-	   assign dbg_mbx_data_o = 32'h0;
-	end
-      endgenerate
-   
-   
 endmodule // urv_cpu
