@@ -93,7 +93,7 @@ module urv_regfile
      (
       .clk_i(clk_i),
       .rst_i (rst_i ),
-      .en1_i(1'b1),
+      .en1_i(!d_stall_i),
       .a1_i(rf_rs1_i),
       .q1_o(rs1_regfile),
 
@@ -106,7 +106,7 @@ module urv_regfile
      (
       .clk_i(clk_i),
       .rst_i (rst_i ),
-      .en1_i(1'b1),
+      .en1_i(!d_stall_i),
       .a1_i(rf_rs2_i),
       .q1_o(rs2_regfile),
 
