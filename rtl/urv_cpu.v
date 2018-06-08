@@ -37,13 +37,13 @@ module urv_cpu
     parameter g_with_hw_debug = 0,
     parameter g_with_compressed_insns = 0,
     parameter g_debug_breakpoints = 6
-   ) 
+   )
    (
    input 	 clk_i,
    input 	 rst_i,
 
    input 	 irq_i,
-   
+
    // instruction mem I/F
    output [31:0] im_addr_o,
    input [31:0]  im_data_i,
@@ -96,7 +96,7 @@ module urv_cpu
    wire [31:0] 	 x2f_pc_bra;
    wire 	 x2f_bra;
    wire          x2f_dbg_toggle;
-  
+
    // F->D stage interface
    wire [31:0] 	 f2d_pc, f2d_ir;
    wire 	 f2d_valid;
@@ -108,7 +108,7 @@ module urv_cpu
    wire [4:0] 	 rf_rd;
    wire [31:0] 	 rf_rd_value;
    wire 	 rf_rd_write;
-   
+
    // D->X1 stage interface
    wire 	 d2x_valid;
    wire [31:0] 	 d2x_pc;
@@ -148,11 +148,11 @@ module urv_cpu
    wire [31:0] 	 x_rs2_value, x_rs1_value;
    wire [31:0] 	 rf_bypass_rd_value = x2w_rd_value;
    wire  	 rf_bypass_rd_write = rf_rd_write && !x2w_load; // multiply/shift too?
-   
+
    // misc stuff
    wire [39:0] 	 csr_time, csr_cycles;
-   
-   urv_fetch 
+
+   urv_fetch
     #(
       .g_with_hw_debug(g_with_hw_debug),
       .g_with_compressed_insns(g_with_compressed_insns) )
@@ -187,7 +187,7 @@ module urv_cpu
       );
 
 
-   urv_decode 
+   urv_decode
      #(
        .g_with_hw_div(g_with_hw_div),
        .g_with_hw_mulh(g_with_hw_mulh)
@@ -257,7 +257,7 @@ module urv_cpu
 
       .x_rs1_value_o(x_rs1_value),
       .x_rs2_value_o(x_rs2_value),
-      
+
       .w_rd_i(rf_rd),
       .w_rd_value_i(rf_rd_value),
       .w_rd_store_i(rf_rd_write),
@@ -265,7 +265,7 @@ module urv_cpu
       .w_bypass_rd_write_i(rf_bypass_rd_write),
       .w_bypass_rd_value_i(rf_bypass_rd_value)
       );
- 
+
    // Execute 1/Memory stage (X1/M)
    urv_exec
      #(
@@ -276,7 +276,7 @@ module urv_cpu
      (
       .clk_i(clk_i),
       .rst_i(rst_i),
-      
+
       .irq_i ( irq_i ),
 
       // pipe control
@@ -312,10 +312,10 @@ module urv_cpu
       .d_use_op1_i(d2x_use_op1),
       .d_use_op2_i(d2x_use_op2),
       .d_rd_source_i(d2x_rd_source),
-      .d_rd_write_i(d2x_rd_write), 
+      .d_rd_write_i(d2x_rd_write),
       .d_opcode_i(d2x_opcode),
       .d_shifter_sign_i(d2x_shifter_sign),
-  
+
       // to F stage (branches)
       .f_branch_target_o (x2f_pc_bra), // fixme: consistent naming
       .f_branch_take_o (x2f_bra),
@@ -379,7 +379,7 @@ module urv_cpu
       .dm_data_l_i(dm_data_l_i),
       .dm_load_done_i(dm_load_done_i),
       .dm_store_done_i(dm_store_done_i),
-      
+
       // to register file
       .rf_rd_value_o(rf_rd_value),
       .rf_rd_o(rf_rd),
@@ -387,19 +387,19 @@ module urv_cpu
    );
 
    // Built-in timer
-   urv_timer 
+   urv_timer
      #(
        .g_timer_frequency(g_timer_frequency),
        .g_clock_frequency(g_clock_frequency)
-       ) 
-   ctimer 
+       )
+   ctimer
      (
       .clk_i(clk_i),
       .rst_i(rst_i),
 
       .csr_time_o(csr_time),
       .csr_cycles_o(csr_cycles),
-      
+
       .sys_tick_o(sys_tick)
       );
 
@@ -414,7 +414,7 @@ module urv_cpu
 	x2f_bra_d0 <= x2f_bra;
 	x2f_bra_d1 <= x2f_bra_d0;
      end
-   
+
    // pipeline control
    assign f_stall = x_stall_req || w_stall_req || d_stall_req;
    assign d_stall = x_stall_req || w_stall_req;
