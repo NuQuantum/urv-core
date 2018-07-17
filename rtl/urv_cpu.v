@@ -154,9 +154,9 @@ module urv_cpu
 
    urv_fetch
     #(
-      .g_with_hw_debug(g_with_hw_debug),
-      .g_with_compressed_insns(g_with_compressed_insns) )
-      fetch
+      .g_with_compressed_insns(g_with_compressed_insns)
+      )
+   fetch
      (
       .clk_i(clk_i),
       .rst_i(rst_i),
@@ -190,7 +190,8 @@ module urv_cpu
    urv_decode
      #(
        .g_with_hw_div(g_with_hw_div),
-       .g_with_hw_mulh(g_with_hw_mulh)
+       .g_with_hw_mulh(g_with_hw_mulh),
+       .g_with_hw_debug(g_with_hw_debug)
        )
    decode
      (

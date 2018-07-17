@@ -57,8 +57,7 @@ module urv_fetch
 );
 
    parameter g_with_compressed_insns = 0;
-   parameter g_with_hw_debug = 0;
-   
+
    reg [31:0] pc;
    reg 	      rst_d;
 
