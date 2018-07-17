@@ -271,7 +271,8 @@ module urv_cpu
    urv_exec
      #(
        .g_with_hw_div(g_with_hw_div),
-       .g_with_hw_mulh(g_with_hw_mulh)
+       .g_with_hw_mulh(g_with_hw_mulh),
+       .g_with_hw_debug(g_with_hw_debug)
        )
    execute
      (
