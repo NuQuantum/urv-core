@@ -508,23 +508,26 @@ module urv_exec
 	w_store_o <= 0;
 	w_valid_o <= 0;
 	
-     end else if (!x_stall_i) begin
-	  f_branch_target_o <= branch_target;
-	  f_branch_take <= branch_take && !x_kill_i && d_valid_i;
-          f_dbg_toggle_o <= g_with_hw_debug && d_is_ebreak_i && !x_kill_i && d_valid_i;
-          w_rd_o <= d_rd_i;
-	  w_rd_value_o <= rd_value;
+     end else begin
+	w_valid_o <= !x_exception && !x_stall_i;
 
-	  w_rd_write_o <= d_rd_write_i && !x_kill_i && d_valid_i && !x_exception;
-	  w_load_o <= d_is_load_i && !x_kill_i && d_valid_i && !x_exception;
-	  w_store_o <= d_is_store_i && !x_kill_i && d_valid_i && !x_exception;
+	if (!x_stall_i) begin
+	   f_branch_target_o <= branch_target;
+           w_rd_o <= d_rd_i;
+	   w_rd_value_o <= rd_value;
+	   
+	   f_branch_take <= branch_take && !x_kill_i && d_valid_i;
+           f_dbg_toggle_o <= g_with_hw_debug && d_is_ebreak_i && !x_kill_i && d_valid_i;
+  	   w_rd_write_o <= d_rd_write_i && !x_kill_i && d_valid_i && !x_exception;
+	   w_load_o <= d_is_load_i && !x_kill_i && d_valid_i && !x_exception;
+	   w_store_o <= d_is_store_i && !x_kill_i && d_valid_i && !x_exception;
 
-	  w_rd_source_o <= d_rd_source_i;
-	  w_fun_o <= d_fun_i;
-	  w_dm_addr_o <= dm_addr;
-	  w_valid_o <= !x_exception;
+	   w_rd_source_o <= d_rd_source_i;
+	   w_fun_o <= d_fun_i;
+	   w_dm_addr_o <= dm_addr;
+	end
      end // else: !if(rst_i)
-
+   
    always@*
      exception_pc <= d_pc_i;
    

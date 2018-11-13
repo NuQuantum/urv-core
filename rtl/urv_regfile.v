@@ -92,7 +92,7 @@ module urv_regfile
 
    wire [31:0] rs1_regfile;
    wire [31:0] rs2_regfile;
-   wire        write  = (!d_stall_i && w_rd_store_i && (w_rd_i != 0));
+   wire        write  = (w_rd_store_i && (w_rd_i != 0));
 
    urv_regmem bank0
      (

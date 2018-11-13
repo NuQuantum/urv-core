@@ -201,8 +201,8 @@ module urv_multiply
    reg 	     mul_stall_req;
    reg 		     mul_stall_req_d0;
    reg 		     mul_stall_req_d1;
-   
-   
+
+
    urv_mult18x18 mul0
      (
       .clk_i(clk_i),
