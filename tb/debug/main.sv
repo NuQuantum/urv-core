@@ -47,10 +47,11 @@ module main;
    reg        dbg_force = 1;
    wire       dbg_enabled;
    reg [31:0] dbg_insn;
+   reg        dbg_insn_set;
+   wire       dbg_insn_ready;
 
    reg [31:0] mbxi_data;
    reg        mbxi_write;
-   wire       mbxi_full;
    wire [31:0] mbxo_data;
 
 
@@ -139,7 +140,7 @@ module main;
 
    reg irq = 0;
 
-   urv_cpu DUT
+   urv_cpu #(.g_with_hw_debug(1)) DUT
      (
       .clk_i(clk),
       .rst_i(rst),
@@ -166,14 +167,13 @@ module main;
       .dbg_force_i(dbg_force),
       .dbg_enabled_o(dbg_enabled),
       .dbg_insn_i(dbg_insn),
+      .dbg_insn_set_i(dbg_insn_set),
+      .dbg_insn_ready_o(dbg_insn_ready),
 
       // Debug mailboxes
-      .dbg_mbxi_data_i(mbxi_data),
-      .dbg_mbxi_write_i(mbxi_write),
-      .dbg_mbxi_full_o(mbxi_full),
-      .dbg_mbxo_data_o(mbxo_data),
-      .dbg_mbxo_full_o(),
-      .dbg_mbxo_read_i(1'b0)
+      .dbg_mbx_data_i(mbxi_data),
+      .dbg_mbx_write_i(mbxi_write),
+      .dbg_mbx_data_o(mbxo_data)
       );
 
    always #5ns clk <= ~clk;
@@ -181,8 +181,13 @@ module main;
 
    task send_insn (input [31:0] insn);
       dbg_insn <= insn;
+      dbg_insn_set <= 1'b1;
       @(posedge clk);
+      dbg_insn_set <= 1'b0;
       dbg_insn <= insn_nop;
+      @(posedge clk);
+      while (!dbg_insn_ready)
+        @(posedge clk);
    endtask // send_insn
 
    task send_mbxi(input [31:0] data);
@@ -191,8 +196,7 @@ module main;
       @(posedge clk);
       mbxi_write <= 0;
       @(posedge clk);
-      while(mbxi_full)
-        @(posedge clk);
+      @(posedge clk);
    endtask
 
    task read_pc;
@@ -227,6 +231,7 @@ module main;
       const var [31:0] loader_addr = 16'h3f80;
 
       dbg_insn = insn_nop;
+      dbg_insn_set = 1'b0;
       mbxi_data <= 0;
       mbxi_write <= 0;
 
@@ -234,47 +239,11 @@ module main;
       rst = 0;
       dbg_force = 0;
 
-      $display("Load loader");
+      while (!dbg_insn_ready)
+        @(posedge clk);
 
-      for (int i = 0; i < $size(loader); i++)
-        begin
-           // Address
-           mbxi_data <= loader_addr + i * 4;
-           mbxi_write <= 1;
-           send_insn (insn_csrr_t0_mbxi);
-           send_insn (insn_nop);
-           send_insn (insn_nop);
+      $display("Load application");
 
-           // Insn
-           mbxi_data <= loader[i];
-           mbxi_write <= 1;
-           send_insn (insn_csrr_t1_mbxi);
-           send_insn (insn_nop);
-           send_insn (insn_nop);
-
-           //  Store
-           send_insn (insn_sw_t1_t0);
-        end
-
-      //  Set PC address
-      mbxi_data <= loader_addr;
-      mbxi_write <= 1;
-      send_insn (insn_csrr_t0_mbxi);
-
-      //  Branch and be sure it is executed.
-      mbxi_write <= 0;
-      send_insn (insn_jr_t0);
-      send_insn (insn_nop);
-      send_insn (insn_nop);
-
-      //  Flush mailbox.
-      send_insn (insn_csrr_t1_mbxi);
-
-      send_insn (insn_ebreak);
-      send_insn (insn_nop);
-      send_insn (insn_nop);
-
-      //  Use loader to load the program.
       begin
          int fd;
          int filelen;
@@ -283,7 +252,7 @@ module main;
          void'($fseek(fd, 0, 2));
          filelen = $ftell(fd);
          void'($rewind(fd));
-         send_mbxi(filelen);
+
          filelen = (filelen + 3) / 4;
          for(int i = 0; i < filelen; i++)
            begin
@@ -293,11 +262,33 @@ module main;
               l += $fread(b1, fd);
               l += $fread(b2, fd);
               l += $fread(b3, fd);
-              //  LE.
-              send_mbxi({b3, b2, b1, b0});
+
+              // Address
+              mbxi_data <= i * 4;
+              mbxi_write <= 1;
+              send_insn (insn_csrr_t0_mbxi);
+
+              // Data
+              mbxi_data <= {b3, b2, b1, b0};
+              mbxi_write <= 1;
+              send_insn (insn_csrr_t1_mbxi);
+
+              //  Store
+              send_insn (insn_sw_t1_t0);
            end
          $fclose(fd);
       end
+
+      //  Set PC address
+      mbxi_data <= 0;
+      mbxi_write <= 1;
+      send_insn (insn_csrr_t0_mbxi);
+
+      //  Branch and be sure it is executed.
+      mbxi_write <= 0;
+      send_insn (insn_jr_t0);
+
+      send_insn (insn_ebreak);
 
       // Wait until debug mode is enabled again.
       while (!dbg_enabled)
@@ -308,11 +299,7 @@ module main;
 
       // Continue
       send_insn (insn_jmp_4);
-      send_insn (insn_nop);
-      send_insn (insn_nop);
-      send_insn (insn_nop);
       send_insn (insn_ebreak);
-      dbg_insn <= insn_nop;
 
       while (1)
         begin
