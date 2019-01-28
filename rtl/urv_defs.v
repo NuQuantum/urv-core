@@ -88,6 +88,12 @@
 `define CSR_ID_MIP 12'h344
 `define CSR_ID_MIE 12'h304
 `define CSR_ID_DBGMBX 12'h7d0
+`define CSR_ID_MIMPID 12'hf13
+
+/* History for MIMPID:
+   0000_0000: mimpid not implemented
+   2019_0125: mimpid added.
+*/
 
 `define CSR_OP_CSRRW 3'b001
 `define CSR_OP_CSRRS 3'b010
