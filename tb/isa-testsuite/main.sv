@@ -23,10 +23,18 @@
 
 `timescale 1ns/1ps
 
-`define CFG_WITH_HW_MULH  'h1
-`define CFG_WITH_HW_DIV   'h2
-`define CFG_WITH_HW_DEBUG 'h4
-`define CFG_WITH_COMPRESSED_INSNS 'h8
+localparam struct {
+   bit            mul;
+   bit            div;
+   bit            dbg;
+   bit            ws;
+   } configs[5] = '{ '{ mul: 0, div: 0, dbg: 0, ws: 0 },
+                     '{ mul: 1, div: 0, dbg: 0, ws: 0 },
+                     '{ mul: 1, div: 1, dbg: 0, ws: 0 },
+                     '{ mul: 1, div: 1, dbg: 1, ws: 0 },
+                     '{ mul: 1, div: 1, dbg: 1, ws: 1 }};
+localparam int n_configs = 1;
+ //$size(configs);
 
 module ICpuTestWrapper
 (
@@ -34,36 +42,39 @@ module ICpuTestWrapper
   );
 
    reg rst = 1;
-   
-   
+
+
    reg r_with_hw_mulh = 0;
    reg r_with_hw_divide = 0;
    reg r_with_hw_debug = 0;
 
    reg irq = 0;
-   
-   parameter int n_configs = 8;
+
    parameter int mem_size = 16384;
-   
+
    wire [31:0] im_addr_m[n_configs];
    wire [31:0] dm_addr_m[n_configs];
    wire [31:0] dm_data_s_m[n_configs];
    wire [3:0]  dm_data_select_m[n_configs];
-   wire        dm_write_m[n_configs];
+   wire        dm_store_m[n_configs];
+   wire        dm_load_m[n_configs];
+   reg         dm_store_done;
+   reg         dm_load_done;
    wire        irq_m[n_configs];
 
    int 	       r_active_cpu = 0;
-   
 
-   reg [31:0] im_addr;
+
+   wire [31:0] im_addr = im_addr_m[r_active_cpu];
    reg [31:0] im_data;
    reg        im_valid;
 
-   reg [31:0] dm_addr;
-   reg [31:0] dm_data_s;
-   reg [31:0] dm_data_l;
-   reg [3:0]  dm_data_select;
-   reg        dm_write;
+   wire [31:0] dm_addr = dm_addr_m[r_active_cpu];
+   wire [31:0]  dm_data_s = dm_data_s_m[r_active_cpu];
+   reg [31:0]  dm_data_l;
+   wire [3:0]  dm_data_select = dm_data_select_m[r_active_cpu];
+   wire        dm_store = dm_store_m[r_active_cpu];
+   wire        dm_load = dm_load_m[r_active_cpu];
    reg 	       dm_valid_l = 1;
    reg        dm_ready;
 
@@ -72,33 +83,35 @@ module ICpuTestWrapper
    string current_msg;
    int 	  test_complete = 0;
 
-   task automatic selectConfiguration( int mask );
-      r_active_cpu = mask;
+   task automatic selectConfiguration( int cpu );
+      r_active_cpu = cpu;
    endtask // selectConfiguration
-   
+
 
    function automatic string getConfigurationString();
       automatic string rv;
-      
-      if( r_active_cpu & `CFG_WITH_HW_MULH )
+
+      if(configs[r_active_cpu].mul)
 	rv = {rv, "hw_mulh"};
-      if( r_active_cpu & `CFG_WITH_HW_DIV )
+      if(configs[r_active_cpu].div)
 	rv = {rv, " hw_div"};
-      if( r_active_cpu & `CFG_WITH_HW_DEBUG )
+      if(configs[r_active_cpu].dbg)
 	rv = {rv, " hw_debug"};
+      if(configs[r_active_cpu].ws)
+	rv = {rv, " wait_state"};
 
       return rv;
-      
+
    endfunction // getConfigurationString
-   
-   
+
+
    task automatic runTest(string filename);
       int f = $fopen(filename,"r");
       int n, i;
 
       current_msg = "";
       test_complete = 0;
-      
+
       rst <= 1;
       @(posedge clk_i);
       @(posedge clk_i);
@@ -118,7 +131,7 @@ module ICpuTestWrapper
 
 	   if ( r < 0 )
 	     break;
-	   
+
            if(cmd == "write")
              begin
                 mem[addr % mem_size] = data;
@@ -126,7 +139,7 @@ module ICpuTestWrapper
 
         end
       $fclose(f);
-      
+
       @(posedge clk_i);
       rst <= 0;
       @(posedge clk_i);
@@ -140,10 +153,10 @@ module ICpuTestWrapper
    function automatic int isTestComplete();
       return test_complete;
    endfunction // isTestComplete
-   
+
 
    int seed = 0;
-   
+
 
    always@(posedge clk_i)
      begin
@@ -155,88 +168,87 @@ module ICpuTestWrapper
 	   im_valid <= 0;
 
         //  Write data memory
-	if(dm_write && dm_data_select[0])
-	  mem [(dm_addr / 4) % mem_size][7:0] <= dm_data_s[7:0];
-	if(dm_write && dm_data_select[1])
-	  mem [(dm_addr / 4) % mem_size][15:8] <= dm_data_s[15:8];
-	if(dm_write && dm_data_select[2])
-	  mem [(dm_addr / 4) % mem_size][23:16] <= dm_data_s[23:16];
-	if(dm_write && dm_data_select[3])
-	  mem [(dm_addr / 4) % mem_size][31:24] <= dm_data_s[31:24];
+        if (dm_store)
+          begin
+	     if(dm_data_select[0])
+	       mem [(dm_addr / 4) % mem_size][7:0] <= dm_data_s[7:0];
+	     if(dm_data_select[1])
+	       mem [(dm_addr / 4) % mem_size][15:8] <= dm_data_s[15:8];
+	     if(dm_data_select[2])
+	       mem [(dm_addr / 4) % mem_size][23:16] <= dm_data_s[23:16];
+	     if(dm_data_select[3])
+	       mem [(dm_addr / 4) % mem_size][31:24] <= dm_data_s[31:24];
+             dm_store_done <= 1;
+          end
+        else
+          dm_store_done <= 0;
 
         //  Read data memory
         dm_ready <= 1'b1; // $dist_uniform(seed, 0, 100 ) <= 50;
-	dm_data_l <= mem[(dm_addr/4) % mem_size];
+        if (dm_load)
+          begin
+	     dm_data_l <= mem[(dm_addr/4) % mem_size];
+             dm_load_done <= 1;
+          end
+        else
+          begin
+             dm_data_l <= 'x;
+             dm_load_done <= 0;
+          end
      end // always@ (posedge clk)
 
 
-   
-   genvar      i;
-
-   
-   
-   generate
-      for(i = 0; i < n_configs; i++)
-	begin
-	   urv_cpu 
-	      #(
-		.g_with_hw_mulh( i & `CFG_WITH_HW_MULH ? 1 : 0 ),
-		.g_with_hw_div( i & `CFG_WITH_HW_DIV ? 1 : 0 ),
-		.g_with_hw_debug( i & `CFG_WITH_HW_DEBUG ? 1 : 0 )
-		)
-		DUTx
-	      (
-	       .clk_i(i == r_active_cpu ? clk_i : 1'b0 ),
-	       .rst_i(i == r_active_cpu ? rst : 1'b1 ),
-
-	       .irq_i ( irq ),
-
-	       // instruction mem I/F
-	       .im_addr_o(im_addr_m[i]),
-	       .im_data_i(im_data),
-	       .im_valid_i(im_valid),
-
-	       // data mem I/F
-	       .dm_addr_o(dm_addr_m[i]),
-	       .dm_data_s_o(dm_data_s_m[i]),
-	       .dm_data_l_i(dm_data_l),
-	       .dm_data_select_o(dm_data_select_m[i]),
-	       .dm_store_o(dm_write_m[i]),
-	       .dm_load_o(),
-	       .dm_store_done_i(1'b1),
-	       .dm_load_done_i(1'b1),
-	       .dm_ready_i(dm_ready),
-
-	       // Debug
-	       .dbg_force_i(1'b0),
-	       .dbg_enabled_o(),
-	       .dbg_insn_i(32'h0),
-	       .dbg_insn_set_i(1'b0),
-	       .dbg_insn_ready_o(),
-
-	       // Debug mailbox
-	       .dbg_mbx_data_i(0),
-	       .dbg_mbx_write_i(1'b0),
-	       .dbg_mbx_data_o()
-	       );
-	end // for (i = 0; i < n_configs; i++)
-   endgenerate
-
-   always@*
+   for(genvar i = 0; i < n_configs; i++)
      begin
-	im_addr <= im_addr_m[r_active_cpu];
-	dm_addr <= dm_addr_m[r_active_cpu];
-	dm_data_s <= dm_data_s_m[r_active_cpu];
-	dm_data_select <= dm_data_select_m[r_active_cpu];
-	dm_write <= dm_write_m[r_active_cpu];
+	urv_cpu
+	  #(
+	    .g_with_hw_mulh(configs[i].mul),
+	    .g_with_hw_div(configs[i].div),
+	    .g_with_hw_debug(configs[i].dbg)
+	    )
+	DUTx
+	   (
+	    .clk_i(i == r_active_cpu ? clk_i : 1'b0 ),
+	    .rst_i(i == r_active_cpu ? rst : 1'b1 ),
+
+	    .irq_i ( irq ),
+
+	    // instruction mem I/F
+	    .im_addr_o(im_addr_m[i]),
+	    .im_data_i(im_data),
+	    .im_valid_i(im_valid),
+
+	    // data mem I/F
+	    .dm_addr_o(dm_addr_m[i]),
+	    .dm_data_s_o(dm_data_s_m[i]),
+	    .dm_data_l_i(dm_data_l),
+	    .dm_data_select_o(dm_data_select_m[i]),
+	    .dm_store_o(dm_store_m[i]),
+	    .dm_load_o(dm_load_m[i]),
+	    .dm_store_done_i(dm_store_done),
+	    .dm_load_done_i(dm_load_done),
+            .dm_ready_i(dm_ready),
+
+	    // Debug
+	    .dbg_force_i(1'b0),
+	    .dbg_enabled_o(),
+	    .dbg_insn_i(32'h0),
+	    .dbg_insn_set_i(1'b0),
+	    .dbg_insn_ready_o(),
+
+	    // Debug mailbox
+	    .dbg_mbx_data_i(0),
+	    .dbg_mbx_write_i(1'b0),
+	    .dbg_mbx_data_o()
+	    );
      end
-   
-   
+
+
    always@(posedge clk_i)
-     if(dm_write)
+     if(dm_store)
        begin
 	  automatic bit [7:0] chr = dm_data_s[7:0];
-	  
+
 	  if(dm_addr == 'h100000)
 	    begin
 	       current_msg = $sformatf("%s%c", current_msg, chr);
@@ -246,7 +258,7 @@ module ICpuTestWrapper
 	       test_complete = 1;
 	    end
        end
-   
+
 endmodule // ICpuTestWrapper
 
 
@@ -263,14 +275,14 @@ module main;
 
 class ISATestRunner extends LoggerClient;
 
-   typedef enum 
+   typedef enum
 		{
 		 R_OK = 0,
 		 R_FAIL = 1,
 		 R_TIMEOUT = 2
 		 } TestStatus;
-   
-   
+
+
    const time 	c_test_timeout = 1ms;
 
    task automatic runTest(string filename, ref TestStatus  status, ref int failedTest );
@@ -279,7 +291,7 @@ class ISATestRunner extends LoggerClient;
       DUT.runTest(filename);
 
       failedTest = 0;
-      
+
       while(!DUT.isTestComplete() )
 	begin
 	   #1us;
@@ -300,8 +312,8 @@ class ISATestRunner extends LoggerClient;
       automatic string tests[$];
       automatic int n, i, f, failCount = 0;
       automatic string  failedTests = "";
-      
-      
+
+
       f = $fopen( $sformatf("%s/%s", test_dir, list_file ) ,"r");
 
       while(!$feof(f))
@@ -309,7 +321,7 @@ class ISATestRunner extends LoggerClient;
            automatic string fname;
 
            void'($fscanf(f,"%s", fname));
-	   
+
 	   tests.push_back(fname);
         end
 
@@ -318,12 +330,12 @@ class ISATestRunner extends LoggerClient;
 	   automatic int failedTest;
 	   automatic TestStatus status;
 	   automatic string s;
-	   
+
            if (tests[i][0] == "#" || tests[i] == "")
              continue;
 
 	   runTest({test_dir,"/",tests[i]}, status, failedTest );
-	   
+
 	   if ( status == R_OK )
 	     s = "PASS";
 	   else if ( status == R_TIMEOUT )
@@ -334,9 +346,9 @@ class ISATestRunner extends LoggerClient;
 		s = $sformatf ("FAIL (subtest %d)", failedTest );
 		failCount++;
 	     end
-	   
+
 	   msg(0, $sformatf("%s: %s", tests[i], s ) );
-	   
+
 	end
 
       if(failCount)
@@ -348,26 +360,22 @@ class ISATestRunner extends LoggerClient;
 
 endclass // ISATestRunner
 
-
-   const int n_configs = 8;
-   
-   
    initial begin
       automatic int i;
       automatic ISATestRunner testRunner = new;
       automatic Logger l = Logger::get();
 
-      for(i=0;i<=7;i++)
+      for(i=0;i<n_configs;i++)
 	begin
 	   DUT.selectConfiguration(i);
-	   
+
 	   l.startTest($sformatf( "Full ISA Test for feature set [%s]", DUT.getConfigurationString() ) );
-	   
+
 	   testRunner.runAllTests("../../sw/testsuite/isa", "tests.lst" );
 	end
 
       l.writeTestReport("report.txt");
-      
+
    end
 
 
