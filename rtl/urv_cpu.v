@@ -54,7 +54,6 @@ module urv_cpu
    output [31:0] dm_data_s_o,
    input [31:0]  dm_data_l_i,
    output [3:0]  dm_data_select_o,
-   input 	 dm_ready_i,
 
    output 	 dm_store_o,
    output 	 dm_load_o,
@@ -342,7 +341,6 @@ module urv_cpu
       .dm_data_select_o(dm_data_select_o),
       .dm_store_o(dm_store_o),
       .dm_load_o(dm_load_o),
-      .dm_ready_i(dm_ready_i),
 
       // CSR registers/timer stuff
       .csr_time_i(csr_time),

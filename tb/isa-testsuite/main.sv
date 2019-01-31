@@ -76,7 +76,6 @@ module ICpuTestWrapper
    wire        dm_store = dm_store_m[r_active_cpu];
    wire        dm_load = dm_load_m[r_active_cpu];
    reg 	       dm_valid_l = 1;
-   reg         dm_ready = 0;
 
    wire        dm_delay = configs[r_active_cpu].ws;
    wire        dm_store_done = dm_store_done_d[dm_delay];
@@ -186,7 +185,6 @@ module ICpuTestWrapper
         dm_store_done_d <= {dm_store_done_d[0], dm_store};
 
         //  Read data memory
-        dm_ready <= 1;
         dm_data_l_d[1] <= dm_data_l_d[0];
 	dm_data_l_d[0] <= dm_load ? mem[(dm_addr/4) % mem_size] : 'x;
         dm_load_done_d <= {dm_load_done_d[0], dm_load};
@@ -222,7 +220,6 @@ module ICpuTestWrapper
 	    .dm_load_o(dm_load_m[i]),
 	    .dm_store_done_i(dm_store_done),
 	    .dm_load_done_i(dm_load_done),
-            .dm_ready_i(dm_ready),
 
 	    // Debug
 	    .dbg_force_i(1'b0),

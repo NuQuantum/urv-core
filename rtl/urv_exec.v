@@ -105,7 +105,6 @@ module urv_exec
    output [3:0]      dm_data_select_o,
    output 	     dm_store_o,
    output 	     dm_load_o,
-   input 	     dm_ready_i,
 
    input [39:0]      csr_time_i,
    input [39:0]      csr_cycles_i,
@@ -534,9 +533,6 @@ module urv_exec
      if(f_branch_take)
        x_stall_req_o <= 0;
      else if(divider_stall_req || multiply_stall_req)
-       x_stall_req_o <= 1;
-   // stall if memory request pending, but memory not ready
-     else if ((d_is_load_i || d_is_store_i) && d_valid_i && !x_kill_i && !dm_ready_i)
        x_stall_req_o <= 1;
      else
        x_stall_req_o <= 0;
