@@ -507,15 +507,16 @@ module urv_exec
 	w_load_o <= 0;
 	w_store_o <= 0;
 	w_valid_o <= 0;
-	
-     end else begin
-	w_valid_o <= !x_exception && !x_stall_i;
 
+     end else begin
 	if (!x_stall_i) begin
+           // Stay valid for memory operations
+           w_valid_o <= !x_exception;
+
 	   f_branch_target_o <= branch_target;
            w_rd_o <= d_rd_i;
 	   w_rd_value_o <= rd_value;
-	   
+
 	   f_branch_take <= branch_take && !x_kill_i && d_valid_i;
            f_dbg_toggle_o <= g_with_hw_debug && d_is_ebreak_i && !x_kill_i && d_valid_i;
   	   w_rd_write_o <= d_rd_write_i && !x_kill_i && d_valid_i && !x_exception;
@@ -525,7 +526,11 @@ module urv_exec
 	   w_rd_source_o <= d_rd_source_i;
 	   w_fun_o <= d_fun_i;
 	   w_dm_addr_o <= dm_addr;
-	end
+        end
+        else if (divider_stall_req || multiply_stall_req) begin
+           // Do not be valid while the mul/div is working
+           w_valid_o <= 0;
+        end
      end // else: !if(rst_i)
    
    always@*
