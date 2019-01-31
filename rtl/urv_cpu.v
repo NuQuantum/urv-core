@@ -39,26 +39,28 @@ module urv_cpu
     parameter g_debug_breakpoints = 6
    )
    (
-   input 	 clk_i,
-   input 	 rst_i,
+   input         clk_i,
+   input         rst_i,
 
-   input 	 irq_i,
+   input         irq_i,
 
    // instruction mem I/F
    output [31:0] im_addr_o,
    input [31:0]  im_data_i,
-   input 	 im_valid_i,
+   input         im_valid_i,
 
    // data mem I/F
+   // The interface is pipelined: store/load are asserted for one cycle
+   // and then store_done/load_done is awaited.
    output [31:0] dm_addr_o,
    output [31:0] dm_data_s_o,
    input [31:0]  dm_data_l_i,
    output [3:0]  dm_data_select_o,
 
-   output 	 dm_store_o,
-   output 	 dm_load_o,
-   input 	 dm_load_done_i,
-   input 	 dm_store_done_i,
+   output        dm_store_o,
+   output        dm_load_o,
+   input         dm_load_done_i,
+   input         dm_store_done_i,
 
    // Debug I/F
    // Debug mode is entered either when dbg_force_i is set, or when the ebreak
