@@ -28,13 +28,13 @@ localparam struct {
    bit            div;
    bit            dbg;
    bit            ws;
-   } configs[5] = '{ '{ mul: 0, div: 0, dbg: 0, ws: 0 },
+   } configs[6] = '{ '{ mul: 0, div: 0, dbg: 0, ws: 0 },
+                     '{ mul: 0, div: 0, dbg: 0, ws: 1 },
                      '{ mul: 1, div: 0, dbg: 0, ws: 0 },
                      '{ mul: 1, div: 1, dbg: 0, ws: 0 },
                      '{ mul: 1, div: 1, dbg: 1, ws: 0 },
                      '{ mul: 1, div: 1, dbg: 1, ws: 1 }};
-localparam int n_configs = 1;
- //$size(configs);
+localparam int n_configs = $size(configs);
 
 module ICpuTestWrapper
 (
@@ -58,8 +58,8 @@ module ICpuTestWrapper
    wire [3:0]  dm_data_select_m[n_configs];
    wire        dm_store_m[n_configs];
    wire        dm_load_m[n_configs];
-   reg         dm_store_done;
-   reg         dm_load_done;
+   reg  [1:0]  dm_store_done_d;  // Delay line
+   reg  [1:0]  dm_load_done_d;   // Delay line
    wire        irq_m[n_configs];
 
    int 	       r_active_cpu = 0;
@@ -70,13 +70,18 @@ module ICpuTestWrapper
    reg        im_valid;
 
    wire [31:0] dm_addr = dm_addr_m[r_active_cpu];
-   wire [31:0]  dm_data_s = dm_data_s_m[r_active_cpu];
-   reg [31:0]  dm_data_l;
+   wire [31:0] dm_data_s = dm_data_s_m[r_active_cpu];
+   reg [31:0]  dm_data_l_d[1:0];
    wire [3:0]  dm_data_select = dm_data_select_m[r_active_cpu];
    wire        dm_store = dm_store_m[r_active_cpu];
    wire        dm_load = dm_load_m[r_active_cpu];
    reg 	       dm_valid_l = 1;
-   reg        dm_ready;
+   reg         dm_ready = 0;
+
+   wire        dm_delay = configs[r_active_cpu].ws;
+   wire        dm_store_done = dm_store_done_d[dm_delay];
+   wire        dm_load_done = dm_load_done_d[dm_delay];
+   wire [31:0] dm_data_l = dm_data_l_d[dm_delay];
 
    reg [31:0]  mem[0:mem_size - 1];
 
@@ -157,7 +162,6 @@ module ICpuTestWrapper
 
    int seed = 0;
 
-
    always@(posedge clk_i)
      begin
         //  Read memory for insn
@@ -178,23 +182,14 @@ module ICpuTestWrapper
 	       mem [(dm_addr / 4) % mem_size][23:16] <= dm_data_s[23:16];
 	     if(dm_data_select[3])
 	       mem [(dm_addr / 4) % mem_size][31:24] <= dm_data_s[31:24];
-             dm_store_done <= 1;
           end
-        else
-          dm_store_done <= 0;
+        dm_store_done_d <= {dm_store_done_d[0], dm_store};
 
         //  Read data memory
-        dm_ready <= 1'b1; // $dist_uniform(seed, 0, 100 ) <= 50;
-        if (dm_load)
-          begin
-	     dm_data_l <= mem[(dm_addr/4) % mem_size];
-             dm_load_done <= 1;
-          end
-        else
-          begin
-             dm_data_l <= 'x;
-             dm_load_done <= 0;
-          end
+        dm_ready <= 1;
+        dm_data_l_d[1] <= dm_data_l_d[0];
+	dm_data_l_d[0] <= dm_load ? mem[(dm_addr/4) % mem_size] : 'x;
+        dm_load_done_d <= {dm_load_done_d[0], dm_load};
      end // always@ (posedge clk)
 
 
