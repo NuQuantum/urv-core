@@ -231,11 +231,11 @@ module urv_cpu
       .x_is_divide_o(d2x_is_divide),
       .x_rd_source_o(d2x_rd_source),
       .x_rd_write_o(d2x_rd_write),
-      .x_csr_sel_o (d2x_csr_sel),
-      .x_csr_imm_o (d2x_csr_imm),
-      .x_is_csr_o (d2x_is_csr),
-      .x_is_mret_o (d2x_is_mret),
-      .x_is_ebreak_o (d2x_is_ebreak),
+      .x_csr_sel_o(d2x_csr_sel),
+      .x_csr_imm_o(d2x_csr_imm),
+      .x_is_csr_o(d2x_is_csr),
+      .x_is_mret_o(d2x_is_mret),
+      .x_is_ebreak_o(d2x_is_ebreak),
       .x_alu_op1_o(d2x_alu_op1),
       .x_alu_op2_o(d2x_alu_op2),
       .x_use_op1_o(d2x_use_op1),
@@ -279,7 +279,7 @@ module urv_cpu
       .clk_i(clk_i),
       .rst_i(rst_i),
 
-      .irq_i ( irq_i ),
+      .irq_i(irq_i),
 
       // pipe control
       .x_stall_i(x_stall),
@@ -292,12 +292,12 @@ module urv_cpu
 
       // from D stage
       .d_valid_i(d2x_valid),
-      .d_is_csr_i ( d2x_is_csr ),
+      .d_is_csr_i(d2x_is_csr),
       .d_is_mret_i(d2x_is_mret),
       .d_is_ebreak_i(d2x_is_ebreak),
       .d_dbg_mode_i(dbg_enabled_o),
-      .d_csr_imm_i ( d2x_csr_imm ),
-      .d_csr_sel_i (d2x_csr_sel),
+      .d_csr_imm_i(d2x_csr_imm),
+      .d_csr_sel_i(d2x_csr_sel),
       .d_pc_i(d2x_pc),
       .d_rd_i(d2x_rd),
       .d_fun_i(d2x_fun),
@@ -319,8 +319,8 @@ module urv_cpu
       .d_shifter_sign_i(d2x_shifter_sign),
 
       // to F stage (branches)
-      .f_branch_target_o (x2f_pc_bra), // fixme: consistent naming
-      .f_branch_take_o (x2f_bra),
+      .f_branch_target_o(x2f_pc_bra), // fixme: consistent naming
+      .f_branch_take_o(x2f_bra),
       .f_dbg_toggle_o(x2f_dbg_toggle),
 
       // to X2/W stage
@@ -332,9 +332,9 @@ module urv_cpu
       .w_rd_o(x2w_rd),
       .w_rd_value_o(x2w_rd_value),
       .w_rd_write_o(x2w_rd_write),
-      .w_rd_source_o ( x2w_rd_source),
-      .w_rd_shifter_o ( x2w_rd_shifter),
-      .w_rd_multiply_o ( x2w_rd_multiply),
+      .w_rd_source_o(x2w_rd_source),
+      .w_rd_shifter_o(x2w_rd_shifter),
+      .w_rd_multiply_o(x2w_rd_multiply),
 
       // Data memory I/F
       .dm_addr_o(dm_addr_o),
@@ -345,9 +345,9 @@ module urv_cpu
       .dm_ready_i(dm_ready_i),
 
       // CSR registers/timer stuff
-      .csr_time_i (csr_time),
-      .csr_cycles_i (csr_cycles),
-      .timer_tick_i (sys_tick),
+      .csr_time_i(csr_time),
+      .csr_cycles_i(csr_cycles),
+      .timer_tick_i(sys_tick),
 
       // Debug mailboxes
       .dbg_mbx_data_i(dbg_mbx_data_i),
@@ -373,8 +373,8 @@ module urv_cpu
       .x_rd_source_i(x2w_rd_source),
       .x_rd_value_i(x2w_rd_value),
       .x_rd_write_i(x2w_rd_write),
-      .x_shifter_rd_value_i ( x2w_rd_shifter),
-      .x_multiply_rd_value_i ( x2w_rd_multiply),
+      .x_shifter_rd_value_i(x2w_rd_shifter),
+      .x_multiply_rd_value_i(x2w_rd_multiply),
       .x_dm_addr_i(x2w_dm_addr),
 
       // Data memory I/F
