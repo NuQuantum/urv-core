@@ -88,7 +88,7 @@ module urv_csr
        `CSR_ID_MIP: csr_in1 <= csr_mip_i;
        `CSR_ID_MIE: csr_in1 <= csr_mie_i;
        `CSR_ID_DBGMBX: csr_in1 <= g_with_hw_debug ? mbx_data : 32'h0;
-       `CSR_ID_MIMPID: csr_in1 <= 32'h20190125;
+       `CSR_ID_MIMPID: csr_in1 <= 32'h20190131;
        default: csr_in1 <= 32'h0;
      endcase // case (d_csr_sel_i)
 

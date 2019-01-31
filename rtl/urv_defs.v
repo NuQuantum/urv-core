@@ -93,6 +93,7 @@
 /* History for MIMPID:
    0000_0000: mimpid not implemented
    2019_0125: mimpid added.
+   2019_0131: data memory wait state.
 */
 
 `define CSR_OP_CSRRW 3'b001
