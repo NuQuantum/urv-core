@@ -44,15 +44,14 @@ module urv_exceptions
 
    input         exp_irq_i,
    input         exp_tick_i,
-   input         exp_breakpoint_i,
-   input         exp_unaligned_load_i,
-   input         exp_unaligned_store_i,
-   input         exp_invalid_insn_i,
+   output        exp_ei_pending_o,
+   output        exp_ti_pending_o,
 
    input [31:0]  x_csr_write_value_i,
 
    input         x_exception_i,
    input [3:0]   x_exception_cause_i,
+   input         x_interrupt_i,
 
    input [31:0]  x_exception_pc_i,
    output [31:0] x_exception_pc_o,
@@ -64,61 +63,50 @@ module urv_exceptions
    output [31:0] csr_mcause_o
    );
 
-
    reg [31:0] 	 csr_mepc;
    reg [31:0]    csr_mie;
-   reg 		 csr_ie;
+   reg 		 csr_status_mie;
+   reg [3:0] 	 csr_mcause_code;
+   reg           csr_mcause_interrupt;
 
-   reg [3:0] 	 csr_mcause;
-
-   reg [5:0] 	 except_vec_masked;
-
-   assign csr_mcause_o = {28'h0, csr_mcause};
+   assign csr_mcause_o = {csr_mcause_interrupt, 27'h0, csr_mcause_code};
    assign csr_mepc_o = csr_mepc;
    assign csr_mie_o = csr_mie;
-   assign csr_mstatus_o[0] = csr_ie;
-   assign csr_mstatus_o[31:1] = 0;
+   assign csr_mstatus_o[3] = csr_status_mie;
+   assign csr_mstatus_o[31:4] = 0;
+   assign csr_mstatus_o[2:0] = 0;
 
    assign csr_mip_o = 0;
 
-   always@(posedge clk_i)
-     if (rst_i)
-       except_vec_masked <= 0;
-     else begin
-	if(!x_stall_i && !x_kill_i && d_is_csr_i && d_csr_sel_i == `CSR_ID_MIP)
-          begin
-	     except_vec_masked[4] <= x_csr_write_value_i [`EXCEPT_TIMER];
-	     except_vec_masked[5] <= x_csr_write_value_i [`EXCEPT_IRQ];
-	  end
-        else begin
-	   if ( exp_tick_i )
-	     except_vec_masked[4] <= csr_mie[`EXCEPT_TIMER] & csr_ie;
-
-	   if( exp_irq_i )
-	     except_vec_masked[5] <= csr_mie[`EXCEPT_IRQ] & csr_ie;
-	end
-     end
+   assign exp_ei_pending_o = exp_irq_i & csr_mie[`EXCEPT_IRQ] & csr_status_mie;
+   assign exp_ti_pending_o = exp_tick_i & csr_mie[`EXCEPT_TIMER] & csr_status_mie;
 
    always@(posedge clk_i)
      if(rst_i)
        begin
-          csr_mcause <= 0;
+          csr_mcause_code <= 0;
+          csr_mcause_interrupt <= 0;
 	  csr_mepc <= 0;
 	  csr_mie <= 0;
-	  csr_ie <= 0;
+	  csr_status_mie <= 0;
        end
      else
        begin
           if (x_exception_i)
 	    begin
 	       csr_mepc <= x_exception_pc_i;
-	       csr_mcause <= x_exception_cause_i;
+	       csr_mcause_code <= x_exception_cause_i;
+               csr_mcause_interrupt <= x_interrupt_i;
+
+               //  Mask interrupts when taken.
+               if (x_interrupt_i)
+                 csr_status_mie <= 0;
 	    end
 
           if (!x_stall_i && !x_kill_i && d_is_csr_i)
 	    case (d_csr_sel_i)
 	      `CSR_ID_MSTATUS:
-		csr_ie <= x_csr_write_value_i[0];
+		csr_status_mie <= x_csr_write_value_i[3];
 	      `CSR_ID_MEPC:
 		csr_mepc <= x_csr_write_value_i;
 	      `CSR_ID_MIE:

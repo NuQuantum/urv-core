@@ -70,7 +70,7 @@
 `define FUNC_REM 3'b110
 `define FUNC_REMU 3'b111
 
-`define RD_SOURCE_ALU 3'b000 
+`define RD_SOURCE_ALU 3'b000
 `define RD_SOURCE_SHIFTER 3'b010
 `define RD_SOURCE_MULTIPLY 3'b001
 `define RD_SOURCE_DIVIDE 3'b100
@@ -78,9 +78,9 @@
 `define RD_SOURCE_MULH 3'b111
 
 `define CSR_ID_CYCLESH 12'hc80
-`define CSR_ID_CYCLESL 12'hc00 
+`define CSR_ID_CYCLESL 12'hc00
 `define CSR_ID_TIMEH 12'hc81
-`define CSR_ID_TIMEL 12'hc01 
+`define CSR_ID_TIMEL 12'hc01
 `define CSR_ID_MSCRATCH 12'h340
 `define CSR_ID_MEPC 12'h341
 `define CSR_ID_MSTATUS 12'h300
@@ -106,15 +106,18 @@
 `define URV_RESET_VECTOR 32'h00000000
 `define URV_TRAP_VECTOR  32'h00000008
 
-//  Bits in mie/mip for user mode
-`define EXCEPT_TIMER 4
-`define EXCEPT_IRQ 8
+//  Bits in mie/mip for machine mode
+`define EXCEPT_TIMER 7
+`define EXCEPT_IRQ 11
 
 //  Cause
 `define CAUSE_ILLEGAL_INSN    2
 `define CAUSE_BREAKPOINT      3
 `define CAUSE_UNALIGNED_LOAD  4
 `define CAUSE_UNALIGNED_STORE 6
+
+`define CAUSE_MACHINE_IRQ     11
+`define CAUSE_MACHINE_TIMER   7
 
 `define OP_SEL_BYPASS_X 0
 `define OP_SEL_BYPASS_W 1

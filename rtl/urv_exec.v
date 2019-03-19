@@ -130,6 +130,7 @@ module urv_exec
 
    reg           x_exception;
    reg [3:0]     x_exception_cause;
+   reg           x_interrupt;
    reg 		 branch_take;
    reg 		 branch_condition_met;
 
@@ -154,8 +155,9 @@ module urv_exec
    wire [31:0] 	 csr_mie, csr_mip, csr_mepc, csr_mstatus,csr_mcause;
    wire [31:0] 	 csr_write_value;
    wire [31:0]   exception_address;
-
    wire [31:0]   exception_pc;
+   wire          irq_pending;
+   wire          timer_pending;
 
    urv_csr
      #(
@@ -210,13 +212,12 @@ module urv_exec
 
       .exp_irq_i(irq_i),
       .exp_tick_i(timer_tick_i),
-      .exp_breakpoint_i(1'b0),
-      .exp_unaligned_load_i(1'b0),
-      .exp_unaligned_store_i(1'b0),
-      .exp_invalid_insn_i(d_is_undef_i && !x_stall_i && !x_kill_i && d_valid_i),
+      .exp_ei_pending_o(irq_pending),
+      .exp_ti_pending_o(timer_pending),
 
       .x_exception_i(x_exception),
       .x_exception_cause_i(x_exception_cause),
+      .x_interrupt_i(x_interrupt),
       .x_exception_pc_i(exception_pc),
       .x_exception_pc_o(exception_address),
 
@@ -388,35 +389,48 @@ module urv_exec
 
    // x_exception: exception due to execution
    always@*
-     if (x_stall_i || x_kill_i || !d_valid_i)
-       begin
-          //  If the current instruction is not valid, there is no exception.
-          x_exception <= 0;
-          x_exception_cause <= 4'hx;
-       end
-     else if (d_is_undef_i)
-       begin
-          x_exception <= 1;
-          x_exception_cause <= `CAUSE_ILLEGAL_INSN;
-       end
-     else
-       case (d_opcode_i)
-         `OPC_LOAD:
-           begin
-              x_exception <= unaligned_addr;
-              x_exception_cause <= `CAUSE_UNALIGNED_LOAD;
-           end
-         `OPC_STORE:
-           begin
-              x_exception <= unaligned_addr;
-              x_exception_cause <= `CAUSE_UNALIGNED_STORE;
-           end
-         default:
-           begin
-              x_exception <= 0;
-              x_exception_cause <= 4'hx;
-           end
-       endcase
+     begin
+        x_exception <= 0;
+        x_interrupt <= 0;
+        x_exception_cause <= 4'hx;
+
+        if (x_stall_i || x_kill_i || !d_valid_i)
+          begin
+             //  If the current instruction is not valid, there is no exception.
+          end
+        else if (d_is_undef_i)
+          begin
+             x_exception <= 1;
+             x_interrupt <= 0;
+             x_exception_cause <= `CAUSE_ILLEGAL_INSN;
+          end
+        else if (unaligned_addr
+                 && (d_opcode_i == `OPC_LOAD || d_opcode_i == `OPC_STORE))
+          begin
+             x_exception <= 1;
+             x_interrupt <= 0;
+             case (d_opcode_i)
+               `OPC_LOAD:
+                 x_exception_cause <= `CAUSE_UNALIGNED_LOAD;
+               `OPC_STORE:
+                 x_exception_cause <= `CAUSE_UNALIGNED_STORE;
+               default:
+                 x_exception_cause <= 4'hx;
+             endcase // case (d_opcode_i)
+          end
+        else if (timer_pending)
+          begin
+             x_exception <= 1;
+             x_interrupt <= 1;
+             x_exception_cause <= `CAUSE_MACHINE_TIMER;
+          end
+        else if (irq_pending)
+          begin
+             x_exception <= 1;
+             x_interrupt <= 1;
+             x_exception_cause <= `CAUSE_MACHINE_IRQ;
+          end
+     end
 
    // generate store value/select
    always@*
