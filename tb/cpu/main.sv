@@ -42,7 +42,6 @@ module main;
    wire [3:0]  dm_data_select;
    wire        dm_write;
    reg 	       dm_valid_l = 1;
-   reg        dm_ready;
 
 
    localparam int mem_size = 16384;
@@ -93,8 +92,6 @@ module main;
 
    always@(posedge clk)
      begin
-	dm_ready <= 1'b1; // $dist_uniform(seed, 0, 100 ) <= 50;
-
 	dm_data_l <= mem[(dm_addr/4) % mem_size];
      end
 
@@ -136,7 +133,6 @@ module main;
       .dm_load_o(),
       .dm_store_done_i(1'b1),
       .dm_load_done_i(1'b1),
-      .dm_ready_i(dm_ready),
 
       // Debug
       .dbg_force_i(1'b0),
