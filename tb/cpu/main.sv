@@ -47,6 +47,7 @@ module main;
    localparam int mem_size = 16384;
 
    reg [31:0]  mem[0:mem_size - 1];
+   reg [7:0]   irq_counter = 0;
 
    task automatic load_ram(string filename);
       int f = $fopen(filename,"r");
@@ -68,8 +69,6 @@ module main;
 
    int seed;
 
-
-
    always@(posedge clk)
      begin
 	if ($dist_uniform(seed, 0, 100 ) <= 100) begin
@@ -78,41 +77,54 @@ module main;
 	end else
 	   im_valid <= 0;
 
-	if(dm_write && dm_data_select[0])
-	  mem [(dm_addr / 4) % mem_size][7:0] <= dm_data_s[7:0];
-	if(dm_write && dm_data_select[1])
-	  mem [(dm_addr / 4) % mem_size][15:8] <= dm_data_s[15:8];
-	if(dm_write && dm_data_select[2])
-	  mem [(dm_addr / 4) % mem_size][23:16] <= dm_data_s[23:16];
-	if(dm_write && dm_data_select[3])
-	  mem [(dm_addr / 4) % mem_size][31:24] <= dm_data_s[31:24];
+        if (dm_write)
+          begin
+             if (dm_addr == 'h100000)
+               begin
+	          $display("\n ****** TX '%c' \n", dm_data_s[7:0]) ;
+	          $fwrite(f_console,"%c", dm_data_s[7:0]);
+	          $fflush(f_console);
+               end
+             else if (dm_addr < 'h100000)
+               begin
+	          if(dm_data_select[0])
+	            mem [(dm_addr / 4) % mem_size][7:0] <= dm_data_s[7:0];
+	          if(dm_data_select[1])
+	            mem [(dm_addr / 4) % mem_size][15:8] <= dm_data_s[15:8];
+	          if(dm_data_select[2])
+	            mem [(dm_addr / 4) % mem_size][23:16] <= dm_data_s[23:16];
+	          if(dm_data_select[3])
+	            mem [(dm_addr / 4) % mem_size][31:24] <= dm_data_s[31:24];
+               end // else: !if(dm_addr == 'h100004)
+          end // if (dm_write)
      end
-
-
 
    always@(posedge clk)
-     begin
-	dm_data_l <= mem[(dm_addr/4) % mem_size];
-     end
-
+     dm_data_l <= mem[(dm_addr/4) % mem_size];
 
    reg irq = 0;
-   wire irq_ack;
 
+   always @(posedge clk)
+     if (dm_write && dm_addr == 'h100004)
+       begin
+          irq <= 0;
+          irq_counter <= dm_data_s[7:0];
+       end
+     else if (irq_counter == 1)
+       begin
+          irq <= 1;
+          irq_counter <= 0;
+       end
+     else if (irq_counter != 0)
+       irq_counter <= irq_counter - 1;
 
-   initial begin
-      repeat(100)
-	@(posedge clk);
-
-      irq<=1;
-      @(posedge clk);
-      irq <= 0;
-      @(posedge clk);
-
-   end // initial begin
-
-
-   urv_cpu DUT
+   urv_cpu
+     #(
+       .g_with_hw_mulh(1),
+       .g_with_hw_div(0),
+       .g_with_hw_debug(1)
+       )
+   DUT
      (
       .clk_i(clk),
       .rst_i(rst),
@@ -315,15 +327,6 @@ module main;
 
 
 
-
-   always@(posedge clk)
-     if(dm_write && dm_addr == 'h100000)
-       begin
-	  $display("\n ****** TX '%c' \n", dm_data_s[7:0]) ;
-//	  $fwrite(f_exec_log,"\n ****** TX '%c' \n", dm_data_s[7:0]) ;
-	  $fwrite(f_console,"%c", dm_data_s[7:0]);
-	  $fflush(f_console);
-       end
 
    int cycles = 0;
 
