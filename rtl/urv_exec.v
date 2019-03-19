@@ -125,8 +125,8 @@ module urv_exec
    assign rs1 = rf_rs1_value_i;
    assign rs2 = rf_rs2_value_i;
 
-   reg [31:0] 	 alu_op1, alu_op2, alu_result;
-   reg [31:0] 	 rd_value;
+   wire [31:0]   alu_op1, alu_op2;
+   reg [31:0] 	 alu_result, rd_value;
 
    reg           x_exception;
    reg [3:0]     x_exception_cause;
@@ -135,7 +135,8 @@ module urv_exec
 
    reg [31:0] 	 branch_target;
 
-   reg [31:0] 	 dm_addr, dm_data_s;
+   wire [31:0]   dm_addr;
+   reg [31:0]    dm_data_s;
    reg [3:0]     dm_select_s;
 
    // Comparator
@@ -152,7 +153,7 @@ module urv_exec
 
    wire [31:0] 	 csr_mie, csr_mip, csr_mepc, csr_mstatus,csr_mcause;
    wire [31:0] 	 csr_write_value;
-   wire [31:0] 	 exception_address, exception_vector;
+   wire [31:0]   exception_address;
 
    wire [31:0]   exception_pc;
 
@@ -240,8 +241,7 @@ module urv_exec
      endcase // case (d_fun_i)
 
    // generate load/store address
-   always@*
-     dm_addr <=  d_imm_i + ( ( d_opcode_i == `OPC_JALR || d_opcode_i == `OPC_LOAD || d_opcode_i == `OPC_STORE) ? rs1 : d_pc_i );
+   assign dm_addr = d_imm_i + ( ( d_opcode_i == `OPC_JALR || d_opcode_i == `OPC_LOAD || d_opcode_i == `OPC_STORE) ? rs1 : d_pc_i );
 
    // calculate branch target address
    always@*
@@ -255,12 +255,8 @@ module urv_exec
        branch_target <= dm_addr;
 
    // decode ALU operands
-   always@*
-     begin
-	alu_op1 <= d_use_op1_i ? d_alu_op1_i : rs1;
-	alu_op2 <= d_use_op2_i ? d_alu_op2_i : rs2;
-     end
-
+   assign alu_op1 = d_use_op1_i ? d_alu_op1_i : rs1;
+   assign alu_op2 = d_use_op2_i ? d_alu_op2_i : rs2;
 
    //  Sign extension
    wire [32:0] alu_addsub_op1 = {d_is_signed_alu_op_i ? alu_op1[31] : 1'b0, alu_op1 };
