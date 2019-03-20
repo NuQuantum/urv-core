@@ -166,7 +166,8 @@ module main;
 //      load_ram("../../sw/test3/test3.ram");
 //      load_ram("../../sw/testsuite/benchmarks/dhrystone/dhrystone.ram");
 
-      load_ram("../../sw/testsuite/isa/rv32ui-p-simple.ram");
+      //load_ram("../../sw/testsuite/isa/rv32ui-p-simple.ram");
+      load_ram("../../sw/test.ram");
       repeat(3) @(posedge clk);
       rst = 0;
    end
