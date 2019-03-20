@@ -66,15 +66,19 @@ module urv_exceptions
    reg [31:0] 	 csr_mepc;
    reg [31:0]    csr_mie;
    reg 		 csr_status_mie;
+   reg 		 csr_status_mpie;
    reg [3:0] 	 csr_mcause_code;
    reg           csr_mcause_interrupt;
 
    assign csr_mcause_o = {csr_mcause_interrupt, 27'h0, csr_mcause_code};
    assign csr_mepc_o = csr_mepc;
    assign csr_mie_o = csr_mie;
-   assign csr_mstatus_o[3] = csr_status_mie;
-   assign csr_mstatus_o[31:4] = 0;
+
    assign csr_mstatus_o[2:0] = 0;
+   assign csr_mstatus_o[3] = csr_status_mie;
+   assign csr_mstatus_o[6:4] = 0;
+   assign csr_mstatus_o[7] = csr_status_mpie;
+   assign csr_mstatus_o[31:8] = 0;
 
    assign csr_mip_o = 0;
 
@@ -89,6 +93,7 @@ module urv_exceptions
 	  csr_mepc <= 0;
 	  csr_mie <= 0;
 	  csr_status_mie <= 0;
+          csr_status_mpie <= 0;
        end
      else
        begin
@@ -98,25 +103,32 @@ module urv_exceptions
 	       csr_mcause_code <= x_exception_cause_i;
                csr_mcause_interrupt <= x_interrupt_i;
 
-               //  Mask interrupts when taken.
-               if (x_interrupt_i)
-                 csr_status_mie <= 0;
+               //  Mask interrupts during exceptions
+               csr_status_mpie <= csr_status_mie;
+               csr_status_mie <= 0;
 	    end
 
-          if (!x_stall_i && !x_kill_i && d_is_csr_i)
-	    case (d_csr_sel_i)
-	      `CSR_ID_MSTATUS:
-		csr_status_mie <= x_csr_write_value_i[3];
-	      `CSR_ID_MEPC:
-		csr_mepc <= x_csr_write_value_i;
-	      `CSR_ID_MIE:
-		begin
-		   csr_mie[`EXCEPT_TIMER] <= x_csr_write_value_i[`EXCEPT_TIMER];
-		   csr_mie[`EXCEPT_IRQ] <= x_csr_write_value_i[`EXCEPT_IRQ];
-		end
-	    endcase // case (d_csr_sel_i)
-       end // if (d_is_csr_i)
+          if (!x_stall_i && !x_kill_i)
+            begin
+               if (d_is_csr_i)
+	         case (d_csr_sel_i)
+	           `CSR_ID_MSTATUS:
+		     csr_status_mie <= x_csr_write_value_i[3];
+	           `CSR_ID_MEPC:
+		     csr_mepc <= x_csr_write_value_i;
+	           `CSR_ID_MIE:
+		     begin
+		        csr_mie[`EXCEPT_TIMER] <=
+                          x_csr_write_value_i[`EXCEPT_TIMER];
+		        csr_mie[`EXCEPT_IRQ] <=
+                          x_csr_write_value_i[`EXCEPT_IRQ];
+		     end
+	         endcase
 
+               if (d_is_mret_i)
+                 csr_status_mie <= csr_status_mpie;
+            end
+       end
 
    assign x_exception_pc_o = csr_mepc;
 
