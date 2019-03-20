@@ -1,19 +1,21 @@
 # and don't touch the rest unless you know what you're doing.
 CROSS_COMPILE ?= /opt/gcc-riscv/bin/riscv64-unknown-elf-
 
-CC =		$(CROSS_COMPILE)gcc
+XCC =		$(CROSS_COMPILE)gcc
 LD =		$(CROSS_COMPILE)ld
 OBJDUMP =	$(CROSS_COMPILE)objdump
 OBJCOPY =	$(CROSS_COMPILE)objcopy
 SIZE =		$(CROSS_COMPILE)size
 
-CFLAGS = -m32
-OBJS = crt0.o main.o
-LDS = ram.ld
 OUTPUT=hello
 
-$(OUTPUT): $(LDS) $(OBJS)
-	${CC} -m32 -o $(OUTPUT).elf -nostartfiles $(OBJS)  -T $(LDS)
+CFLAGS = -mabi=ilp32 -march=rv32im
+OBJS = crt0.o $(OUTPUT).o
+LDS = ram.ld
+
+
+$(OUTPUT): $(LDS) $(OBJS) genraminit
+	${XCC} $(CFLAGS) -o $(OUTPUT).elf -nostartfiles $(OBJS) -T $(LDS)
 	${OBJCOPY} -O binary $(OUTPUT).elf $(OUTPUT).bin
 	${OBJDUMP} -D $(OUTPUT).elf > disasm.S
 	$(SIZE) $(OUTPUT).elf
@@ -23,5 +25,11 @@ $(OUTPUT): $(LDS) $(OBJS)
 clean:
 	rm -f $(OUTPUT).elf $(OUTPUT).bin $(OBJS)
 
-%.o:	%.S
-	${CC} -c -m32 $^ -o $@
+%.o: %.S
+	${XCC} -c $(CFLAGS) $< -o $@
+
+%.o: %.c
+	${XCC} -c $(CFLAGS) $< -o $@
+
+genraminit: genraminit.c
+	$(CC) -o $@ $<
