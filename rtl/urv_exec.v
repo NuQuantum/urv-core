@@ -503,7 +503,12 @@ module urv_exec
           f_dbg_toggle_o <= 0;
 	  w_load_o <= 0;
 	  w_store_o <= 0;
-	  w_valid_o <= 0;
+          //  Values so that 0 could be written to register 0.
+          w_rd_value_o <= 0;
+          w_rd_o <= 0;
+          w_rd_source_o <= `RD_SOURCE_ALU;
+          w_rd_write_o <= 1;
+          w_valid_o <= 1;
        end
      else
        begin

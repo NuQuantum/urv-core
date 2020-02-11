@@ -31,7 +31,6 @@
 module urv_regmem
   (
    input 	     clk_i,
-   input 	     rst_i,
 
    input 	     en1_i,
    input [4:0] 	     a1_i,
@@ -92,12 +91,14 @@ module urv_regfile
 
    wire [31:0] rs1_regfile;
    wire [31:0] rs2_regfile;
-   wire        write  = (w_rd_store_i && (w_rd_i != 0));
+   //  By adding rst_i, register 0 is written (to 0) during reset.  This is
+   //  required on some flash FPGA (like smartfusion2 or ProASIC3) which
+   //  doesn't support initialized RAMs.
+   wire        write  = rst_i || (w_rd_store_i && (w_rd_i != 0));
 
    urv_regmem bank0
      (
       .clk_i(clk_i),
-      .rst_i (rst_i ),
       .en1_i(!d_stall_i),
       .a1_i(rf_rs1_i),
       .q1_o(rs1_regfile),
@@ -110,7 +111,6 @@ module urv_regfile
    urv_regmem bank1
      (
       .clk_i(clk_i),
-      .rst_i (rst_i ),
       .en1_i(!d_stall_i),
       .a1_i(rf_rs2_i),
       .q1_o(rs2_regfile),
