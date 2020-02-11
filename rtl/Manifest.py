@@ -11,4 +11,5 @@ files = [ "urv_cpu.v",
           "urv_timer.v",
           "urv_exceptions.v",
           "urv_iram.v",
-          "xurv_core.vhd" ];
+          "xurv_core.vhd",
+          "urv_pkg.vhd" ]
