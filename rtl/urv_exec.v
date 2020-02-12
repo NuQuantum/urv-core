@@ -116,7 +116,7 @@ module urv_exec
    output [31:0]     dbg_mbx_data_o
    );
 
-   parameter g_with_hw_mulh = 0;
+   parameter g_with_hw_mul = 0;
    parameter g_with_hw_div = 0;
    parameter g_with_hw_debug = 0;
 
@@ -312,25 +312,32 @@ module urv_exec
    wire divider_stall_req;
    wire multiply_stall_req;
 
-   urv_multiply
-     #(
-       .g_with_hw_mulh( g_with_hw_mulh )
-      )
-     multiplier
-     (
-      .clk_i(clk_i),
-      .rst_i(rst_i),
-      .x_stall_i(x_stall_i),
-      .x_kill_i(x_kill_i),
-      .x_stall_req_o(multiply_stall_req),
+   generate
+      if (g_with_hw_mul)
+         urv_multiply
+           #(
+             .g_with_hw_mulh( g_with_hw_mul > 1)
+            )
+           multiplier
+           (
+            .clk_i(clk_i),
+            .rst_i(rst_i),
+            .x_stall_i(x_stall_i),
+            .x_kill_i(x_kill_i),
+            .x_stall_req_o(multiply_stall_req),
 
-      .d_rs1_i(rs1),
-      .d_rs2_i(rs2),
-      .d_fun_i(d_fun_i),
-      .d_is_multiply_i(d_is_multiply_i),
-      .w_rd_o (w_rd_multiply_o),
-      .x_rd_o (rd_mulh)
-      );
+            .d_rs1_i(rs1),
+            .d_rs2_i(rs2),
+            .d_fun_i(d_fun_i),
+            .d_is_multiply_i(d_is_multiply_i),
+            .w_rd_o (w_rd_multiply_o),
+            .x_rd_o (rd_mulh)
+            );
+      else begin
+         assign multiply_stall_reg = 0;
+         assign w_rd_multiply_o = 0;
+      end
+   endgenerate
 
    wire [31:0] rd_divide;
 
@@ -363,7 +370,7 @@ module urv_exec
        `RD_SOURCE_ALU:    rd_value <= alu_result;
        `RD_SOURCE_CSR:    rd_value <= rd_csr;
        `RD_SOURCE_DIVIDE: rd_value <= g_with_hw_div ? rd_divide : 32'hx;
-       `RD_SOURCE_MULH:   rd_value <= g_with_hw_mulh ? rd_mulh : 32'hx;
+       `RD_SOURCE_MULH:   rd_value <= g_with_hw_mul > 1 ? rd_mulh : 32'hx;
        default: rd_value <= 32'hx;
      endcase // case (x_rd_source_i)
 

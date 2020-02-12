@@ -7,10 +7,9 @@ package urv_pkg is
            g_timer_frequency : natural := 1000;
            g_clock_frequency : natural := 100000000;
            g_with_hw_div : natural := 1;
-           g_with_hw_mulh : natural := 1;
+           g_with_hw_mul : natural := 1;
            g_with_hw_debug : natural := 0;
-           g_with_compressed_insns : natural := 0;
-           g_debug_breakpoints : natural := 6);
+           g_with_compressed_insns : natural := 0);
         port (
             clk_i   : in  std_logic;
             rst_i   : in  std_logic;

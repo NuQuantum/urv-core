@@ -79,7 +79,7 @@ module urv_decode
 );
 
    parameter g_with_hw_div = 0;
-   parameter g_with_hw_mulh = 0;
+   parameter g_with_hw_mul = 0;
    parameter g_with_hw_debug = 0;
 
    wire [4:0] f_rs1 = f_ir_i[19:15];
@@ -275,8 +275,8 @@ module urv_decode
 
 	  x_is_load_o <= d_opcode == `OPC_LOAD && !load_hazard;
 	  x_is_store_o <= d_opcode == `OPC_STORE && !load_hazard;
-	  
-	  x_is_mul <= d_is_mul;
+
+	  x_is_mul <= d_is_mul && g_with_hw_mul;
 
 	  case (d_opcode)
 	    `OPC_BRANCH:
@@ -302,14 +302,15 @@ module urv_decode
 	       case (d_fun)
 		 `FUNC_MUL:
 		   begin
-		      x_is_multiply_o <= 1;
+		      x_is_multiply_o <= g_with_hw_mul != 0;
 		      x_is_divide_o <= 0;
-		      x_is_undef_o <= 0;
+		      x_is_undef_o <= g_with_hw_mul == 0;
 		   end
 		 `FUNC_MULH, `FUNC_MULHU, `FUNC_MULHSU:
 		   begin
-		      x_is_multiply_o <= 1;
-		      x_is_undef_o <= !g_with_hw_mulh;
+		      x_is_multiply_o <= g_with_hw_mul > 1;
+                      x_is_divide_o <= 0;
+		      x_is_undef_o <= g_with_hw_mul <= 1;
 		   end
 
 		 `FUNC_DIV, `FUNC_DIVU, `FUNC_REM, `FUNC_REMU:

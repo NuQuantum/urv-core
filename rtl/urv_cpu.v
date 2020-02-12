@@ -33,10 +33,10 @@ module urv_cpu
     parameter g_timer_frequency = 1000,
     parameter g_clock_frequency = 100000000,
     parameter g_with_hw_div = 1,
-    parameter g_with_hw_mulh = 1,
+    parameter g_with_hw_mulh = 1, //  Force mulh if mul is > 0 (for compatibility).
+    parameter g_with_hw_mul = 1,  // 0: no multiply, 1: 32x32 mul. 2: mulh
     parameter g_with_hw_debug = 0,
-    parameter g_with_compressed_insns = 0,
-    parameter g_debug_breakpoints = 6
+    parameter g_with_compressed_insns = 0
    )
    (
    input         clk_i,
@@ -153,6 +153,9 @@ module urv_cpu
    // misc stuff
    wire [39:0] 	 csr_time, csr_cycles;
 
+   //  0: no multiply, 1: 32 bit multiply, 2: mulh.
+   localparam p_with_hw_mul = g_with_hw_mul ? (g_with_hw_mul | (g_with_hw_mulh ? 2 : 0)) : 0;
+
    urv_fetch
     #(
       .g_with_compressed_insns(g_with_compressed_insns)
@@ -191,7 +194,7 @@ module urv_cpu
    urv_decode
      #(
        .g_with_hw_div(g_with_hw_div),
-       .g_with_hw_mulh(g_with_hw_mulh),
+       .g_with_hw_mul(p_with_hw_mul),
        .g_with_hw_debug(g_with_hw_debug)
        )
    decode
@@ -272,7 +275,7 @@ module urv_cpu
    urv_exec
      #(
        .g_with_hw_div(g_with_hw_div),
-       .g_with_hw_mulh(g_with_hw_mulh),
+       .g_with_hw_mul(p_with_hw_mul),
        .g_with_hw_debug(g_with_hw_debug)
        )
    execute
@@ -389,21 +392,26 @@ module urv_cpu
    );
 
    // Built-in timer
-   urv_timer
-     #(
-       .g_timer_frequency(g_timer_frequency),
-       .g_clock_frequency(g_clock_frequency)
-       )
-   ctimer
-     (
-      .clk_i(clk_i),
-      .rst_i(rst_i),
+   generate
+      if (g_timer_frequency > 0)
+         urv_timer
+           #(
+             .g_timer_frequency(g_timer_frequency),
+             .g_clock_frequency(g_clock_frequency)
+             )
+         ctimer
+           (
+            .clk_i(clk_i),
+            .rst_i(rst_i),
 
-      .csr_time_o(csr_time),
-      .csr_cycles_o(csr_cycles),
+            .csr_time_o(csr_time),
+            .csr_cycles_o(csr_cycles),
 
-      .sys_tick_o(sys_tick)
-      );
+            .sys_tick_o(sys_tick)
+            );
+      else
+        assign sys_tick = 0;
+   endgenerate
 
    // pipeline invalidation logic after a branch
    reg 		 x2f_bra_d0, x2f_bra_d1;
