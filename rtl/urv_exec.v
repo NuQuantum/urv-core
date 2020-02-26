@@ -241,9 +241,6 @@ module urv_exec
        default: branch_condition_met <= 0;
      endcase // case (d_fun_i)
 
-   // generate load/store address
-   assign dm_addr = d_imm_i + ( ( d_opcode_i == `OPC_JALR || d_opcode_i == `OPC_LOAD || d_opcode_i == `OPC_STORE) ? rs1 : d_pc_i );
-
    // calculate branch target address
    always@*
      if (d_is_mret_i)
@@ -253,7 +250,7 @@ module urv_exec
      else if (d_is_ebreak_i && g_with_hw_debug)
        branch_target <= d_pc_i;
      else
-       branch_target <= dm_addr;
+       branch_target <= d_imm_i + (d_opcode_i == `OPC_JALR ? rs1 : d_pc_i);
 
    // decode ALU operands
    assign alu_op1 = d_use_op1_i ? d_alu_op1_i : rs1;
@@ -374,6 +371,8 @@ module urv_exec
        default: rd_value <= 32'hx;
      endcase // case (x_rd_source_i)
 
+   // generate load/store address
+   assign dm_addr = d_imm_i + rs1;
 
    reg unaligned_addr;
 
