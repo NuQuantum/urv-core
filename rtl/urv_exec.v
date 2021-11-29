@@ -331,7 +331,7 @@ module urv_exec
             .x_rd_o (rd_mulh)
             );
       else begin
-         assign multiply_stall_reg = 0;
+         assign multiply_stall_req = 0;
          assign w_rd_multiply_o = 0;
       end
    endgenerate
