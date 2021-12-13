@@ -35,6 +35,7 @@ module urv_fetch
 
  //  Instruction memory
  output [31:0]     im_addr_o,
+ output            im_rd_o, 
  input [31:0]      im_data_i,
  input             im_valid_i,
 
@@ -64,18 +65,22 @@ module urv_fetch
    reg [31:0]  pc_next;
    reg         dbg_mode;
    reg [2:0]   pipeline_cnt;
+   wire        frozen;
 
+   assign frozen = (f_stall_i 
+                    || dbg_mode || dbg_force_i || pipeline_cnt != 0);
+   
    always@*
-     if( x_bra_i )
+     if (x_bra_i)
        pc_next <= x_pc_bra_i;
-     else if (!rst_d || f_stall_i || !im_valid_i
-              || dbg_mode || dbg_force_i || pipeline_cnt != 0)
+     else if (rst_d || frozen || !im_valid_i)
        pc_next <= pc;
      else
        pc_next <= pc + 4;
 
    // Start fetching the next instruction
    assign im_addr_o = pc_next;
+   assign im_rd_o = x_bra_i || !(frozen || rst_i);
 
    assign dbg_enabled_o = dbg_mode;
    assign dbg_insn_ready_o = pipeline_cnt == 4;
@@ -97,11 +102,11 @@ module urv_fetch
 
           //  The instruction won't be valid on the next cycle, as the
           //  instruction memory is registered.
-	  rst_d <= 0;
+	  rst_d <= 1;
        end
      else
        begin
-	  rst_d <= 1;
+	  rst_d <= 0;
 
 	  if (!f_stall_i)
             begin
@@ -111,6 +116,8 @@ module urv_fetch
                if(!dbg_mode
                   && (dbg_force_i || x_dbg_toggle_i || pipeline_cnt != 0))
                  begin
+                    //  Enter or entering in debug mode
+
                     //  Stall until the debug mode is set (pipeline flushed).
                     f_valid_o <= 0;
                     //  Ebreak enters directly in the debug mode.  As it is
@@ -125,6 +132,7 @@ module urv_fetch
                  end
                else if(dbg_mode)
                  begin
+                    //  In debug mode
                     if (x_dbg_toggle_i)
                       begin
                          //  Leave debug mode immediately.
@@ -147,7 +155,8 @@ module urv_fetch
                  begin
 	            f_ir_o <= im_data_i;
                     // A branch invalidate the current instruction.
-	            f_valid_o <= (rst_d && !x_bra_i);
+                    // Not valid on the first cycle
+	            f_valid_o <= (!rst_d && !x_bra_i);
 	         end
                else
                  begin

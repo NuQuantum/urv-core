@@ -15,16 +15,17 @@ package urv_pkg is
             rst_i   : in  std_logic;
             irq_i   : in  std_logic;
             -- instruction mem I/F
-            im_addr_o : out std_logic_vector (31 downto 0);
-            im_data_i : in  std_logic_vector (31 downto 0);
-            im_valid_i : in std_logic;
+            im_addr_o  : out std_logic_vector (31 downto 0);
+            im_rd_o    : out std_logic;
+            im_data_i  : in  std_logic_vector (31 downto 0);
+            im_valid_i : in  std_logic;
 
             -- data mem I/F
             -- The interface is pipelined: store/load are asserted for one cycle
             -- and then store_done/load_done is awaited.
-            dm_addr_o : out std_logic_vector (31 downto 0);
-            dm_data_s_o : out std_logic_vector (31 downto 0);
-            dm_data_l_i : in std_logic_vector (31 downto 0);
+            dm_addr_o        : out std_logic_vector (31 downto 0);
+            dm_data_s_o      : out std_logic_vector (31 downto 0);
+            dm_data_l_i      : in  std_logic_vector (31 downto 0);
             dm_data_select_o : out std_logic_vector (3 downto 0);
 
             dm_store_o : out std_logic;

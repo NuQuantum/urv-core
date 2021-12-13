@@ -46,6 +46,7 @@ module urv_cpu
 
    // instruction mem I/F
    output [31:0] im_addr_o,
+   output        im_rd_o, 
    input [31:0]  im_data_i,
    input         im_valid_i,
 
@@ -167,6 +168,7 @@ module urv_cpu
 
       // instruction memory
       .im_addr_o(im_addr_o),
+      .im_rd_o(im_rd_o),
       .im_data_i(im_data_i),
       .im_valid_i(im_valid_i),
 
