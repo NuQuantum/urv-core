@@ -34,6 +34,7 @@ module urv_fetch
  input             f_stall_i,
 
  //  Instruction memory
+ //  im_rd_o is maintained as long as the instruction is needed.
  output [31:0]     im_addr_o,
  output            im_rd_o, 
  input [31:0]      im_data_i,
@@ -67,13 +68,18 @@ module urv_fetch
    reg [2:0]   pipeline_cnt;
    wire        frozen;
 
-   assign frozen = (f_stall_i 
+   // Set by x_bra_i until the next instruction has been fetched.
+   // The instruction being fetched before the branch has to be discarded.
+   reg         f_kill;
+
+   // Set as long as no instruction has to be fetched.
+   assign frozen = (f_stall_i
                     || dbg_mode || dbg_force_i || pipeline_cnt != 0);
    
    always@*
      if (x_bra_i)
        pc_next <= x_pc_bra_i;
-     else if (rst_d || frozen || !im_valid_i)
+     else if (rst_d || frozen || f_kill || !im_valid_i)
        pc_next <= pc;
      else
        pc_next <= pc + 4;
@@ -94,6 +100,7 @@ module urv_fetch
           f_pc_o <= 0;
 	  f_ir_o <= 0;
 	  f_valid_o <= 0;
+          f_kill <= 0;
 
           //  Allow to start in debug mode.
           dbg_mode <= dbg_force_i;
@@ -156,10 +163,15 @@ module urv_fetch
 	            f_ir_o <= im_data_i;
                     // A branch invalidate the current instruction.
                     // Not valid on the first cycle
-	            f_valid_o <= (!rst_d && !x_bra_i);
+	            f_valid_o <= (!rst_d && !x_bra_i && !f_kill);
+                    //  The instruction has been killed.
+                    f_kill <= 0;
 	         end
                else
                  begin
+                    //  If a branch has been executed, the instruction being
+                    //  fetch must not be executed.  Kill it.
+                    f_kill <= f_kill | x_bra_i;
 	            f_valid_o <= 0;
 	         end
 	    end
