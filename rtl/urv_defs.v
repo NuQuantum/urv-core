@@ -27,15 +27,16 @@
 `include "urv_config.v"
 
 //  opcodes (bits[6:2], bits[1:0] == 2'b11)
+`define OPC_LOAD   5'b00000
 `define OPC_OP_IMM 5'b00100
-`define OPC_LUI 5'b01101
-`define OPC_AUIPC 5'b00101
-`define OPC_OP 5'b01100
-`define OPC_JAL 5'b11011
-`define OPC_JALR 5'b11001
+`define OPC_AUIPC  5'b00101
+`define OPC_STORE  5'b01000
+`define OPC_OP     5'b01100
+`define OPC_LUI    5'b01101
+`define OPC_CUST2  5'b10110
 `define OPC_BRANCH 5'b11000
-`define OPC_LOAD 5'b00000
-`define OPC_STORE 5'b01000
+`define OPC_JALR   5'b11001
+`define OPC_JAL    5'b11011
 `define OPC_SYSTEM 5'b11100
 
 `define BRA_EQ 3'b000
