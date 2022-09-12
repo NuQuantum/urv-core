@@ -113,6 +113,8 @@ module ICpuTestWrapper
       int f = $fopen(filename,"r");
       int n, i;
 
+      // $display("load %s %x", filename, f);
+
       current_msg = "";
       test_complete = 0;
 
@@ -165,7 +167,10 @@ module ICpuTestWrapper
      begin
         //  Read memory for insn
 	if(   $dist_uniform(seed, 0, 100 ) <= 100) begin
-	   im_data <= mem[(im_addr / 4) % mem_size];
+           logic [31:0] dat;
+           dat = mem[(im_addr / 4) % mem_size];
+           // $display("imem @%h: %08x", im_addr, dat);
+	   im_data <= dat;
 	   im_valid <= 1;
 	end else
 	   im_valid <= 0;
@@ -181,6 +186,7 @@ module ICpuTestWrapper
 	       mem [(dm_addr / 4) % mem_size][23:16] <= dm_data_s[23:16];
 	     if(dm_data_select[3])
 	       mem [(dm_addr / 4) % mem_size][31:24] <= dm_data_s[31:24];
+             // $display("dmem @%h: <- %08x", dm_addr, dm_data_s);
           end
         dm_store_done_d <= {dm_store_done_d[0], dm_store};
 
@@ -208,6 +214,7 @@ module ICpuTestWrapper
 
 	    // instruction mem I/F
 	    .im_addr_o(im_addr_m[i]),
+            .im_rd_o(),
 	    .im_data_i(im_data),
 	    .im_valid_i(im_valid),
 
@@ -245,7 +252,7 @@ module ICpuTestWrapper
 	    begin
 	       current_msg = $sformatf("%s%c", current_msg, chr);
 	    end
-	  else if(DUT.dm_addr == 'h100004)
+	  else if(dm_addr == 'h100004)
 	    begin
 	       test_complete = 1;
 	    end
@@ -275,11 +282,11 @@ class ISATestRunner extends LoggerClient;
 		 } TestStatus;
 
 
-   const time 	c_test_timeout = 1ms;
-
    task automatic runTest(string filename, ref TestStatus  status, ref int failedTest );
-      automatic time t_start = $time;
+      automatic integer cnt = 0;
 
+      // $display("runTest task");
+      
       DUT.runTest(filename);
 
       failedTest = 0;
@@ -287,11 +294,14 @@ class ISATestRunner extends LoggerClient;
       while(!DUT.isTestComplete() )
 	begin
 	   #1us;
-	   if ( $time - t_start > c_test_timeout )
+	   if ( cnt > 10000)
 	     begin
 		status = R_TIMEOUT;
+                $display("timeout,    time=%t, msg=%s",
+                         $time, DUT.getTestResult());
 		return;
 	     end
+           cnt++;
 	end
 
       if ($sscanf( DUT.getTestResult(), "Test %d failed", failedTest ) == 1)
@@ -326,6 +336,8 @@ class ISATestRunner extends LoggerClient;
            if (tests[i][0] == "#" || tests[i] == "")
              continue;
 
+           // $display("Run %s", tests[i]);
+           
 	   runTest({test_dir,"/",tests[i]}, status, failedTest );
 
 	   if ( status == R_OK )
@@ -334,6 +346,7 @@ class ISATestRunner extends LoggerClient;
 	     begin
 		s = "Timeout (likely fail due to CPU freeze)";
 		failCount++;
+                break;
 	     end else begin
 		s = $sformatf ("FAIL (subtest %d)", failedTest );
 		failCount++;
@@ -367,7 +380,7 @@ endclass // ISATestRunner
 	end
 
       l.writeTestReport("report.txt");
-
+      $stop;
    end
 
 
