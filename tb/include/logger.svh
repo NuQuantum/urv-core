@@ -183,13 +183,16 @@ class Logger;
    function automatic string getSystemDate();
       automatic int fd;
       string t;
-      
+
+/*      
       void'($system("date +%X--%x > sys_time.tmp"));
       fd = $fopen("sys_time.tmp","r");
       void'($fscanf(fd,"%s",t));
       $fclose(fd);
       void'($system("rm sys_time.tmp"));
       return t;
+ */
+      return "00:00:00 1970/01/01";
    endfunction // getSystemDate
 	    
    

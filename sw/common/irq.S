@@ -127,3 +127,8 @@ jump_table:
   .word undefined_handler
   .word undefined_handler
   .word undefined_handler
+
+
+	.weak irq_handler
+irq_handler:
+	j irq_handler

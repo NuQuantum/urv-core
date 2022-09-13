@@ -28,18 +28,19 @@ localparam struct {
    bit            div;
    bit            dbg;
    bit            ws;
-   } configs[6] = '{ '{ mul: 0, div: 0, dbg: 0, ws: 0 },
-                     '{ mul: 0, div: 0, dbg: 0, ws: 1 },
-                     '{ mul: 1, div: 0, dbg: 0, ws: 0 },
-                     '{ mul: 1, div: 1, dbg: 0, ws: 0 },
-                     '{ mul: 1, div: 1, dbg: 1, ws: 0 },
-                     '{ mul: 1, div: 1, dbg: 1, ws: 1 }};
+   bit 		  ecc; 		  
+   } configs[6] = '{ '{ mul: 0, div: 0, dbg: 0, ws: 0, ecc: 0 },
+                     '{ mul: 0, div: 0, dbg: 0, ws: 1, ecc: 1 },
+                     '{ mul: 1, div: 0, dbg: 0, ws: 0, ecc: 1 },
+                     '{ mul: 1, div: 1, dbg: 0, ws: 0, ecc: 1 },
+                     '{ mul: 1, div: 1, dbg: 1, ws: 0, ecc: 1 },
+                     '{ mul: 1, div: 1, dbg: 1, ws: 1, ecc: 1 }};
 localparam int n_configs = $size(configs);
 
 module ICpuTestWrapper
-(
- input clk_i
-  );
+  (
+   input clk_i
+   );
 
    reg rst = 1;
 

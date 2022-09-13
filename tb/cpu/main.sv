@@ -53,18 +53,60 @@ module main;
       int f = $fopen(filename,"r");
       int     n, i;
 
+      if (f == 0)
+	$stop;
+      $display("Open %s -> %x", filename, f);
+      
       while(!$feof(f))
         begin
-           int addr, data;
-           string cmd;
+           int addr, data, len;
+           string cmd, line;
+	   byte   c;
+	   int 	  arg;
 
-           void'($fscanf(f,"%s %08x %08x", cmd,addr,data));
-           if(cmd == "write")
-             begin
-                mem[addr % mem_size] = data;
-             end
+	   line = "";
+	   arg = 0;
+	   while(!$feof(f)) begin
+	      c = $fgetc(f);
+	      if (c == 8'hff)
+		break;
+	      if (c == "\n" || c == " ") begin
+		 //$display("got |%s|, arg=%d", line, arg);
+		 case (arg)
+		   0:
+		     if (line != "write") begin
+			$display("bad command: %s", line);
+			$fatal;
+		     end
+		   1: addr = line.atohex();
+		   2:
+		     begin
+			data = line.atohex();
+			if (addr < 64)
+			  $display("mem[%h]=%h", addr, data);
+			mem[addr % mem_size] = data;
+			if (c != "\n") begin
+			   $display("eol expected");
+			   $fatal;
+			end
+			break;
+		     end
+		   default:
+		     begin
+			$display("bad line: %s", line);
+			$fatal;
+		     end
+		 endcase // case (arg)
+		 line="";
+		 arg++;
+	      end
+	      else
+		line = {line, c};
+	   end // while (1)
         end
 
+      $fclose(f);
+      $display("RAM loaded");
    endtask // load_ram
 
    int seed;
@@ -73,6 +115,7 @@ module main;
      begin
 	if ($dist_uniform(seed, 0, 100 ) <= 100) begin
 	   im_data <= mem[(im_addr / 4) % mem_size];
+	   //$display("insn @0x%x: %08x", im_addr, im_data);
 	   im_valid <= 1;
 	end else
 	   im_valid <= 0;
@@ -134,6 +177,7 @@ module main;
       // instruction mem I/F
       .im_addr_o(im_addr),
       .im_data_i(im_data),
+      .im_rd_o(),
       .im_valid_i(im_valid),
 
       // data mem I/F
@@ -167,7 +211,8 @@ module main;
 //      load_ram("../../sw/testsuite/benchmarks/dhrystone/dhrystone.ram");
 
       //load_ram("../../sw/testsuite/isa/rv32ui-p-simple.ram");
-      load_ram("../../sw/test.ram");
+      load_ram("../../sw/testsuite/isa/urv-p-write_ecc.ram");
+//      load_ram("../../sw/test.ram");
       repeat(3) @(posedge clk);
       rst = 0;
    end
@@ -282,7 +327,7 @@ module main;
    endtask // verify_branch
 
    function automatic string s_hex(int x);
-      return $sformatf("%s0x%-08x", x<0?"-":" ", (x<0)?(-x):x);
+      return $sformatf("%s0x%-08x", x<0?"-":"", (x<0)?(-x):x);
    endfunction // s_hex
 
    reg[31:0] dm_addr_d0;
@@ -350,28 +395,28 @@ module main;
 	      begin
 		 opc = "auipc";
 		 fun = "";
-		 args = $sformatf("%-3s %-3s %s", rd, " ", s_hex(DUT.d2x_imm));
+		 args = $sformatf("%-4s %-4s %s", rd, " ", s_hex(DUT.d2x_imm));
 	      end
 
 	    `OPC_LUI:
 	      begin
 		 opc = "lui";
 		 fun = "";
-		 args = $sformatf("%-3s %-3s %s", rd, " ", s_hex(DUT.d2x_imm));
+		 args = $sformatf("%-4s %-4s %s", rd, " ", s_hex(DUT.d2x_imm));
 	      end
 
 	    `OPC_OP_IMM:
 	      begin
 		 opc = "op-imm";
 		 fun = decode_op(DUT.d2x_fun);
-		 args = $sformatf("%-3s %-3s %s", rd, rs1, s_hex(DUT.d2x_imm));
+		 args = $sformatf("%-4s %-4s %s", rd, rs1, s_hex(DUT.d2x_imm));
 	      end
 
 	    `OPC_OP:
 	      begin
 		 opc = "op";
 		 fun = decode_op(DUT.d2x_fun);
-		 args = $sformatf("%-3s %-3s %-3s", rd, rs1, rs2);
+		 args = $sformatf("%-4s %-4s %-4s", rd, rs1, rs2);
 	      end
 
 	    `OPC_JAL:
@@ -379,21 +424,21 @@ module main;
 		 opc = "jal";
 		 fun = "";
 //decode_op(DUT.d2x_fun);
-		 args = $sformatf("%-3s      0x%-08x", rd, DUT.execute.branch_target);
+		 args = $sformatf("%-4s       0x%-08x", rd, DUT.execute.branch_target);
 	      end
 	    `OPC_JALR:
 	      begin
 		 opc = "jalr";
 		 fun = "";
 //decode_op(DUT.d2x_fun);
-		 args = $sformatf("%-3s %-3s 0x%-08x", rd, rs1, DUT.execute.branch_target);
+		 args = $sformatf("%-4s %-4s  0x%-08x", rd, rs1, DUT.execute.branch_target);
 	      end
 	    `OPC_BRANCH:
 	      begin
 		 opc = "branch";
 		 fun = decode_cond(DUT.d2x_fun);
 //decode_op(DUT.d2x_fun);
-		 args = $sformatf("%-3s %-3s 0x%-08x rs1 %s", rs1, rs2, DUT.execute.branch_target, DUT.execute.branch_take?"TAKE":"IGNORE");
+		 args = $sformatf("%-4s %-4s  0x%-08x rs1 %s", rs1, rs2, DUT.execute.branch_target, DUT.execute.branch_take?"TAKE":"IGNORE");
 
 		 verify_branch(DUT.execute.rs1, DUT.execute.rs2, DUT.execute.branch_take,DUT.d2x_fun);
 	      end
@@ -402,37 +447,51 @@ module main;
 		 opc = "ld";
 		 fun = decode_size(DUT.d2x_fun);
 //decode_op(DUT.d2x_fun);
-		 args = $sformatf("%-3s %-3s [0x%-08x + %s]", rd, rs1, DUT.execute.rs1, s_hex($signed(DUT.execute.d_imm_i)));
+		 args = $sformatf("%-4s %-4s [0x%-08x + %s]", rd, rs1, DUT.execute.rs1, s_hex($signed(DUT.execute.d_imm_i)));
 	      end
 	    `OPC_STORE:
 	      begin
 		 opc = "st";
 		 fun = decode_size(DUT.d2x_fun);
 //decode_op(DUT.d2x_fun);
-		 args = $sformatf("%-3s %-3s [0x%-08x + %s]", rs2, rs1, DUT.execute.rs1, s_hex($signed(DUT.execute.d_imm_i)));
+		 args = $sformatf("%-4s %-4s [0x%-08x + %s]", rs2, rs1, DUT.execute.rs1, s_hex($signed(DUT.execute.d_imm_i)));
 	      end
 	    `OPC_SYSTEM:
 	      begin
 		 case (DUT.d2x_fun)
 		   `CSR_OP_CSRRWI:  begin
 		      opc = "csrrwi";
-		      args = $sformatf("%-3s %-3s 0x%08x", rd, decode_csr(DUT.d2x_csr_sel), ((DUT.d2x_csr_imm)));
+		      args = $sformatf("%-4s %-4s 0x%08x", rd, decode_csr(DUT.d2x_csr_sel), ((DUT.d2x_csr_imm)));
 		   end
 		   `CSR_OP_CSRRSI:  begin
 		      opc = "csrrsi";
-		      args = $sformatf("%-3s %-3s 0x%08x", rd, decode_csr(DUT.d2x_csr_sel), ((DUT.d2x_csr_imm)));
+		      args = $sformatf("%-4s %-4s 0x%08x", rd, decode_csr(DUT.d2x_csr_sel), ((DUT.d2x_csr_imm)));
 		   end
 		   `CSR_OP_CSRRCI:  begin
 		      opc = "csrrci";
-		      args = $sformatf("%-3s %-3s 0x%08x", rd, decode_csr(DUT.d2x_csr_sel), ((DUT.d2x_csr_imm)));
+		      args = $sformatf("%-4s %-4s 0x%08x", rd, decode_csr(DUT.d2x_csr_sel), ((DUT.d2x_csr_imm)));
 		   end
 		   `CSR_OP_CSRRW: begin
 		      opc = "csrrw";
-		      args = $sformatf("%-3s %-3s %-3s [0x%08x]", rd, decode_csr(DUT.d2x_csr_sel), rs1, DUT.execute.rs1);
+		      args = $sformatf("%-4s %-4s %-4s [0x%08x]", rd, decode_csr(DUT.d2x_csr_sel), rs1, DUT.execute.rs1);
+		   end
+		   `CSR_OP_CSRRS: begin
+		      opc = "csrrs";
+		      args = $sformatf("%-4s %-4s %-4s [0x%08x]", rd, decode_csr(DUT.d2x_csr_sel), rs1, DUT.execute.rs1);
+		   end
+		   `CSR_OP_CSRRC: begin
+		      opc = "csrrc";
+		      args = $sformatf("%-4s %-4s %-4s [0x%08x]", rd, decode_csr(DUT.d2x_csr_sel), rs1, DUT.execute.rs1);
 		   end
 	         endcase // case (d_fun_i)
 	      end
 
+	    `OPC_CUST2:
+	      begin
+		 opc = "cust2";
+		 fun = $sformatf("%03b", DUT.d2x_fun);
+		 args = $sformatf("%-4s %-4s %-4s", rd, rs1, rs2);
+	      end
            default:
              begin
 		opc = "???";
@@ -441,9 +500,9 @@ module main;
              end
 	  endcase // case (d2x_opcode)
 
-	  $display("%08x [%d]: %-8s %-3s %s",
+	  $display("%08x [%d]: %-8s %-4s %s",
                    DUT.execute.d_pc_i, cycles, opc, fun, args);
-//  	  $fwrite(f_exec_log,"%08x: %-8s %-3s %s\n",
+//  	  $fwrite(f_exec_log,"%08x: %-8s %-4s %s\n",
 //                DUT.execute.d_pc_i, opc, fun, args);
 	  $fwrite(f_exec_log,
                   ": PC %08x OP %08x CYCLES %-0d RS1 %08x RS2 %08x\n",
