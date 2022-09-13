@@ -314,9 +314,9 @@ module urv_decode
 
 	  case (d_opcode)
 	    `OPC_OP:
-	      x_is_add_o <= ~f_ir_i[30] && !(d_fun == `FUNC_SLT || d_fun == `FUNC_SLTU);
+	      x_is_add_o <= ~f_ir_i[30];
 	    `OPC_OP_IMM:
-	      x_is_add_o <= !(d_fun == `FUNC_SLT || d_fun == `FUNC_SLTU);
+	      x_is_add_o <= 1;
 	    `OPC_BRANCH:
 	      x_is_add_o <= 0;
 	    default:

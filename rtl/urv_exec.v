@@ -263,26 +263,20 @@ module urv_exec
    wire [32:0] alu_addsub_op1 = {d_is_signed_alu_op_i ? alu_op1[31] : 1'b0, alu_op1 };
    wire [32:0] alu_addsub_op2 = {d_is_signed_alu_op_i ? alu_op2[31] : 1'b0, alu_op2 };
 
-   reg [32:0]  alu_addsub_result;
-
    // ALU adder/subtractor
-   always@*
-     if(d_is_add_i)
-       alu_addsub_result <= alu_addsub_op1 + alu_addsub_op2;
-     else
-       alu_addsub_result <= alu_addsub_op1 - alu_addsub_op2;
-
+   wire [32:0]  alu_add = alu_addsub_op1 + alu_addsub_op2;
+   wire [32:0] 	alu_sub = alu_addsub_op1 - alu_addsub_op2;
 
    // the rest of the ALU
    always@*
      case (d_fun_i)
-       `FUNC_ADD:  alu_result <= alu_addsub_result[31:0];
-       `FUNC_XOR:  alu_result <= alu_op1 ^ alu_op2;
-       `FUNC_OR:   alu_result <= alu_op1 | alu_op2;
-       `FUNC_AND:  alu_result <= alu_op1 & alu_op2;
-       `FUNC_SLT:  alu_result <= alu_addsub_result[32]?1:0;
-       `FUNC_SLTU: alu_result <= alu_addsub_result[32]?1:0;
-       default:    alu_result <= 32'hx;
+       `FUNC_ADD:    alu_result <= d_is_add_i ? alu_add[31:0] : alu_sub[31:0];
+       `FUNC_XOR:    alu_result <= alu_op1 ^ alu_op2;
+       `FUNC_OR:     alu_result <= alu_op1 | alu_op2;
+       `FUNC_AND:    alu_result <= alu_op1 & alu_op2;
+       `FUNC_SLT,
+	 `FUNC_SLTU: alu_result <= {31'b0, alu_sub[32]};
+       default:      alu_result <= 32'hx;
      endcase // case (d_fun_i)
 
    // barel shifter
