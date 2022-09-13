@@ -131,6 +131,7 @@ module urv_cpu
    wire 	 d2x_is_csr, d2x_is_mret, d2x_is_ebreak, d2x_csr_load_en;
    wire [31:0] 	 d2x_alu_op1, d2x_alu_op2;
    wire  	 d2x_use_op1, d2x_use_op2;
+   wire 	 d2x_use_rs1, d2x_use_rs2;
    wire 	 d2x_is_multiply, d2x_is_divide;
 
    // X1/M->X2/W interface
@@ -223,6 +224,8 @@ module urv_cpu
       .x_pc_o(d2x_pc),
       .x_rs1_o(d2x_rs1),
       .x_rs2_o(d2x_rs2),
+      .x_use_rs1_o(d2x_use_rs1),
+      .x_use_rs2_o(d2x_use_rs2),
       .x_imm_o(d2x_imm),
       .x_rd_o(d2x_rd),
       .x_fun_o(d2x_fun),
@@ -319,6 +322,8 @@ module urv_cpu
       .d_alu_op2_i(d2x_alu_op2),
       .d_use_op1_i(d2x_use_op1),
       .d_use_op2_i(d2x_use_op2),
+      .d_use_rs1_i(d2x_use_rs1),
+      .d_use_rs2_i(d2x_use_rs2),
       .d_rd_source_i(d2x_rd_source),
       .d_rd_write_i(d2x_rd_write),
       .d_opcode_i(d2x_opcode),

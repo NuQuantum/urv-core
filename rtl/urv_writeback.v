@@ -73,7 +73,7 @@ module urv_writeback
 	      2'b11:  load_value <= {{24{dm_data_l_i[31]}}, dm_data_l_i[31:24] };
 	      default: load_value <= 32'hx;
 	    endcase // case ( x_dm_addr_i [1:0] )
-	  
+
 	  `LDST_BU:
 	    case ( x_dm_addr_i [1:0] )
 	      2'b00:  load_value <= {24'h0, dm_data_l_i[7:0] };
@@ -82,7 +82,7 @@ module urv_writeback
 	      2'b11:  load_value <= {24'h0, dm_data_l_i[31:24] };
 	      default: load_value <= 32'hx;
 	    endcase // case ( x_dm_addr_i [1:0] )
-	  
+
 	  `LDST_H:
 	    case ( x_dm_addr_i [1:0] )
 	      2'b00, 2'b01: load_value <= {{16{dm_data_l_i[15]}}, dm_data_l_i[15:0] };
@@ -96,7 +96,7 @@ module urv_writeback
 	      2'b10, 2'b11:  load_value <= {16'h0, dm_data_l_i[31:16] };
 	      default: load_value <= 32'hx;
 	    endcase // case ( x_dm_addr_i [1:0] )
-	    
+
 	  `LDST_L: load_value <= dm_data_l_i;
 
 	  default: load_value <= 32'hx;
@@ -105,7 +105,7 @@ module urv_writeback
 
    reg rf_rd_write;
    reg [31:0] rf_rd_value;
-      
+
    always@*
      if( x_load_i )
        rf_rd_value <= load_value;

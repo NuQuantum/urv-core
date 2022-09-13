@@ -67,13 +67,15 @@ module urv_decode
  output reg [11:0] x_csr_sel_o,
  output reg [4:0]  x_csr_imm_o,
  output reg 	   x_is_csr_o,
- output reg        x_is_mret_o,
- output reg        x_is_ebreak_o,
+ output reg 	   x_is_mret_o,
+ output reg 	   x_is_ebreak_o,
  output reg [31:0] x_imm_o,
  output reg [31:0] x_alu_op1_o,
  output reg [31:0] x_alu_op2_o,
  output reg 	   x_use_op1_o,
  output reg 	   x_use_op2_o,
+ output reg 	   x_use_rs1_o,
+ output reg 	   x_use_rs2_o,
  output reg 	   x_is_divide_o,
  output reg 	   x_is_multiply_o
 );
@@ -264,6 +266,31 @@ module urv_decode
 	  endcase // case (d_opcode_i)
        end // if (!d_stall_i)
    
+
+   always@(posedge clk_i)
+     if(!d_stall_i)
+       case (d_opcode)
+	 `OPC_JALR, `OPC_LOAD, `OPC_OP_IMM:
+	   begin
+	      x_use_rs1_o <= 1'b1;
+	      x_use_rs2_o <= 1'b0;
+	   end
+	 `OPC_STORE, `OPC_BRANCH, `OPC_OP, `OPC_CUST2:
+	   begin
+	      x_use_rs1_o <= 1'b1;
+	      x_use_rs2_o <= 1'b1;
+	   end
+	 `OPC_SYSTEM:
+	   begin
+	      x_use_rs1_o <= d_fun[2] == 1'b0 && d_fun[1:0] != 2'b0;
+	      x_use_rs2_o <= 1'b0;
+	   end
+	 default:
+	   begin
+	      x_use_rs1_o <= 1'b0;
+	      x_use_rs2_o <= 1'b0;
+	   end
+       endcase
    
    wire d_rd_nonzero = (f_rd != 0);
    

@@ -108,8 +108,6 @@ module urv_csr
      endcase // case (d_fun_i)
 
    generate
-
-      
       for (i=0;i<32;i=i+1) 
 	begin : gen_csr_bits
 
@@ -128,8 +126,7 @@ module urv_csr
 		 csr_out[i] <= 32'hx;
 	     endcase // case (d_csr_op_i)
 	end // for (i=0;i<32;i=i+1)
-      
-      endgenerate
+   endgenerate
    
    
     always@(posedge clk_i)

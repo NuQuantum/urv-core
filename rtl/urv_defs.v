@@ -39,6 +39,7 @@
 `define OPC_JAL    5'b11011
 `define OPC_SYSTEM 5'b11100
 
+// funct3 for OPC_BRANCH
 `define BRA_EQ 3'b000
 `define BRA_NEQ  3'b001
 `define BRA_LT 3'b100
@@ -46,12 +47,14 @@
 `define BRA_LTU 3'b110
 `define BRA_GEU 3'b111
 
+// funct3 for OPC_LOAD and OPC_STORE
 `define LDST_B 3'b000
 `define LDST_H 3'b001
 `define LDST_L 3'b010
 `define	LDST_BU 3'b100
 `define LDST_HU 3'b101
 
+// funct3 for OPC_OP and OPC_OP_IMM
 `define FUNC_ADD 3'b000
 `define FUNC_SLT 3'b010
 `define FUNC_SLTU 3'b011
@@ -61,15 +64,24 @@
 `define FUNC_SL 3'b001
 `define FUNC_SR 3'b101
 
+// funct3 for OPC_OP, funct7=1
 `define FUNC_MUL 3'b000
 `define FUNC_MULH 3'b001
 `define FUNC_MULHSU 3'b010
 `define FUNC_MULHU 3'b011
-
 `define FUNC_DIV 3'b100
 `define FUNC_DIVU 3'b101
 `define FUNC_REM 3'b110
 `define FUNC_REMU 3'b111
+
+// funct3 for OPC_SYSTEM
+`define CSR_OP_CSRRW 3'b001
+`define CSR_OP_CSRRS 3'b010
+`define CSR_OP_CSRRC 3'b011
+`define CSR_OP_CSRRWI 3'b101
+`define CSR_OP_CSRRSI 3'b110
+`define CSR_OP_CSRRCI 3'b111
+
 
 `define RD_SOURCE_ALU 3'b000
 `define RD_SOURCE_SHIFTER 3'b010
@@ -97,13 +109,6 @@
    2019_0131: data memory wait state.
 */
 
-`define CSR_OP_CSRRW 3'b001
-`define CSR_OP_CSRRS 3'b010
-`define CSR_OP_CSRRC 3'b011
-`define CSR_OP_CSRRWI 3'b101
-`define CSR_OP_CSRRSI 3'b110
-`define CSR_OP_CSRRCI 3'b111
-
 `define URV_RESET_VECTOR 32'h00000000
 `define URV_TRAP_VECTOR  32'h00000008
 
@@ -116,9 +121,9 @@
 `define CAUSE_BREAKPOINT      3
 `define CAUSE_UNALIGNED_LOAD  4
 `define CAUSE_UNALIGNED_STORE 6
-
-`define CAUSE_MACHINE_IRQ     11
 `define CAUSE_MACHINE_TIMER   7
+`define CAUSE_MACHINE_IRQ     11
+`define CAUSE_ECC_ERROR       15
 
 `define OP_SEL_BYPASS_X 0
 `define OP_SEL_BYPASS_W 1

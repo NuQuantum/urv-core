@@ -173,10 +173,10 @@ module urv_multiply
    input [31:0]      d_rs2_i,
    input [2:0] 	     d_fun_i,
    input 	     d_is_multiply_i,
-      
+
 // multiply result for MUL instructions, bypassed to W-stage to achieve 1-cycle performance
 // without much penalty on clock speed
-   output reg [31:0] w_rd_o, 
+   output [31:0]     w_rd_o,
 
 // multiply result for MULH(S)(U) instructions. Goes to the X stage
 // destination value mux.
@@ -198,7 +198,7 @@ module urv_multiply
    wire signed [35:0] 	      xh_yh;
    wire signed [35:0] yl_xl, yl_xh, yh_xl;
 
-   reg 	     mul_stall_req;
+   wire              mul_stall_req;
    reg 		     mul_stall_req_d0;
    reg 		     mul_stall_req_d1;
 
@@ -265,8 +265,7 @@ module urv_multiply
 	begin
 	   assign mul_result = yl_xl_ext + yh_xl_ext + yl_xh_ext + yh_xh_ext;
 	   
-	   always@(*)
-	     mul_stall_req <= !x_kill_i && !mul_stall_req_d1 && d_is_multiply_i && d_fun_i != `FUNC_MUL;
+	   assign mul_stall_req = !x_kill_i && !mul_stall_req_d1 && d_is_multiply_i && d_fun_i != `FUNC_MUL;
 
 	   always@(posedge clk_i)
 	     x_rd_o <= mul_result[63:32]; 
@@ -286,15 +285,13 @@ module urv_multiply
 	begin
 	   assign mul_result = yl_xl + {yl_xh[14:0], 17'h0} + {yh_xl[14:0], 17'h0};
 
-	   always@*
-	     mul_stall_req <= 1'b0;
+	   assign mul_stall_req = 1'b0;
 	end // else: !if(g_with_hw_mulh)
       
    endgenerate
 
    assign x_stall_req_o = mul_stall_req;
    
-   always@*
-     w_rd_o <= mul_result[31:0];
+   assign w_rd_o = mul_result[31:0];
 
 endmodule // urv_multiply

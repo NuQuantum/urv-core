@@ -53,9 +53,9 @@ module urv_exec
    input 	     d_shifter_sign_i,
 
    input 	     d_is_csr_i,
-   input             d_is_mret_i,
-   input             d_is_ebreak_i,
-   input             d_dbg_mode_i,
+   input 	     d_is_mret_i,
+   input 	     d_is_ebreak_i,
+   input 	     d_dbg_mode_i,
    input [4:0] 	     d_csr_imm_i,
    input [11:0]      d_csr_sel_i,
 
@@ -74,13 +74,15 @@ module urv_exec
    input 	     d_use_op1_i,
    input 	     d_use_op2_i,
 
+   input 	     d_use_rs1_i,
+   input 	     d_use_rs2_i,
 
    input [2:0] 	     d_rd_source_i,
    input 	     d_rd_write_i,
 
    output reg [31:0] f_branch_target_o,
    output 	     f_branch_take_o,
-   output reg        f_dbg_toggle_o,
+   output reg 	     f_dbg_toggle_o,
 
    input 	     irq_i,
 
@@ -112,7 +114,7 @@ module urv_exec
 
    //  Debug mailboxes.
    input [31:0]      dbg_mbx_data_i,
-   input             dbg_mbx_write_i,
+   input 	     dbg_mbx_write_i,
    output [31:0]     dbg_mbx_data_o
    );
 
@@ -120,6 +122,7 @@ module urv_exec
    parameter g_with_hw_div = 0;
    parameter g_with_hw_debug = 0;
 
+   //  Use rs1 and rs2, it's shorter; but keep long name for the ports.
    wire [31:0] 	 rs1, rs2;
 
    assign rs1 = rf_rs1_value_i;
@@ -232,13 +235,13 @@ module urv_exec
    // branch condition decoding
    always@*
      case (d_fun_i) // synthesis parallel_case full_case
-       `BRA_EQ: branch_condition_met <= cmp_equal;
+       `BRA_EQ:  branch_condition_met <= cmp_equal;
        `BRA_NEQ: branch_condition_met <= ~cmp_equal;
-       `BRA_GE: branch_condition_met <= ~cmp_lt | cmp_equal;
-       `BRA_LT: branch_condition_met <= cmp_lt;
+       `BRA_GE:  branch_condition_met <= ~cmp_lt | cmp_equal;
+       `BRA_LT:  branch_condition_met <= cmp_lt;
        `BRA_GEU: branch_condition_met <= ~cmp_lt | cmp_equal;
        `BRA_LTU: branch_condition_met <= cmp_lt;
-       default: branch_condition_met <= 0;
+       default:  branch_condition_met <= 0;
      endcase // case (d_fun_i)
 
    // calculate branch target address
@@ -272,23 +275,15 @@ module urv_exec
 
    // the rest of the ALU
    always@*
-     begin
-	case (d_fun_i)
-	  `FUNC_ADD:
-	    alu_result <= alu_addsub_result[31:0];
-	  `FUNC_XOR:
-	    alu_result <= alu_op1 ^ alu_op2;
-	  `FUNC_OR:
-	    alu_result <= alu_op1 | alu_op2;
-	  `FUNC_AND:
-	    alu_result <= alu_op1 & alu_op2;
-	  `FUNC_SLT:
-	    alu_result <= alu_addsub_result[32]?1:0;
-	  `FUNC_SLTU:
-	    alu_result <= alu_addsub_result[32]?1:0;
-	  default: alu_result <= 32'hx;
-	endcase // case (d_fun_i)
-     end // always@ *
+     case (d_fun_i)
+       `FUNC_ADD:  alu_result <= alu_addsub_result[31:0];
+       `FUNC_XOR:  alu_result <= alu_op1 ^ alu_op2;
+       `FUNC_OR:   alu_result <= alu_op1 | alu_op2;
+       `FUNC_AND:  alu_result <= alu_op1 & alu_op2;
+       `FUNC_SLT:  alu_result <= alu_addsub_result[32]?1:0;
+       `FUNC_SLTU: alu_result <= alu_addsub_result[32]?1:0;
+       default:    alu_result <= 32'hx;
+     endcase // case (d_fun_i)
 
    // barel shifter
    urv_shifter shifter
@@ -368,8 +363,8 @@ module urv_exec
        `RD_SOURCE_CSR:    rd_value <= rd_csr;
        `RD_SOURCE_DIVIDE: rd_value <= g_with_hw_div ? rd_divide : 32'hx;
        `RD_SOURCE_MULH:   rd_value <= g_with_hw_mul > 1 ? rd_mulh : 32'hx;
-       default: rd_value <= 32'hx;
-     endcase // case (x_rd_source_i)
+       default:           rd_value <= 32'hx;
+     endcase
 
    // generate load/store address
    assign dm_addr = d_imm_i + rs1;
@@ -391,7 +386,6 @@ module urv_exec
        default:
 	 unaligned_addr <= 0;
      endcase // case (d_fun_i)
-
 
    // x_exception: exception due to execution
    always@*
