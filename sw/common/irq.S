@@ -1,6 +1,7 @@
 .section .text
 
-.global trap_entry
+	.global trap_entry
+	.weak trap_entry
 trap_entry:
  	csrrw	sp,mscratch,sp
  	addi	sp,sp,-320

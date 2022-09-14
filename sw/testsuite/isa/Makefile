@@ -13,6 +13,7 @@ isa_src_dir := .
 include $(isa_src_dir)/rv32ui/Makefrag
 #include $(isa_src_dir)/rv32si/Makefrag
 include $(isa_src_dir)/rv32mi/Makefrag
+include $(isa_src_dir)/urv/Makefrag
 
 default: all
 
@@ -68,6 +69,7 @@ tests += $$($(1)_tests)
 endef
 
 $(eval $(call compile_template,rv32ui,))
+$(eval $(call compile_template,urv,))
 
 tests_dump = $(addsuffix .dump, $(tests))
 tests_ram = $(addsuffix .ram, $(tests))

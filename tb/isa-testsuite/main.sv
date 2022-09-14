@@ -24,11 +24,11 @@
 `timescale 1ns/1ps
 
 localparam struct {
-   bit            mul;
-   bit            div;
-   bit            dbg;
-   bit            ws;
-   bit 		  ecc; 		  
+   bit mul;
+   bit div;
+   bit dbg;
+   bit ws;
+   bit ecc;
    } configs[6] = '{ '{ mul: 0, div: 0, dbg: 0, ws: 0, ecc: 0 },
                      '{ mul: 0, div: 0, dbg: 0, ws: 1, ecc: 1 },
                      '{ mul: 1, div: 0, dbg: 0, ws: 0, ecc: 1 },
@@ -97,13 +97,15 @@ module ICpuTestWrapper
       automatic string rv;
 
       if(configs[r_active_cpu].mul)
-	rv = {rv, "hw_mulh"};
+	rv = {rv, " hw_mulh"};
       if(configs[r_active_cpu].div)
 	rv = {rv, " hw_div"};
       if(configs[r_active_cpu].dbg)
 	rv = {rv, " hw_debug"};
       if(configs[r_active_cpu].ws)
 	rv = {rv, " wait_state"};
+      if(configs[r_active_cpu].ecc)
+	rv = {rv, " ecc"};
 
       return rv;
 
@@ -204,7 +206,8 @@ module ICpuTestWrapper
 	  #(
 	    .g_with_hw_mulh(configs[i].mul),
 	    .g_with_hw_div(configs[i].div),
-	    .g_with_hw_debug(configs[i].dbg)
+	    .g_with_hw_debug(configs[i].dbg),
+	    .g_with_ecc(configs[i].ecc)
 	    )
 	DUTx
 	   (
@@ -375,9 +378,11 @@ endclass // ISATestRunner
 	begin
 	   DUT.selectConfiguration(i);
 
-	   l.startTest($sformatf( "Full ISA Test for feature set [%s]", DUT.getConfigurationString() ) );
+	   l.startTest($sformatf( "Full ISA Test for feature set:%s", DUT.getConfigurationString() ) );
 
 	   testRunner.runAllTests("../../sw/testsuite/isa", "tests.lst" );
+	   if (configs[i].ecc)
+	     testRunner.runAllTests("../../sw/testsuite/isa", "tests-urv.lst" );
 	end
 
       l.writeTestReport("report.txt");
