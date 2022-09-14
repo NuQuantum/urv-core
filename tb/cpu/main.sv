@@ -302,6 +302,14 @@ module main;
       endcase // case (csr)
    endfunction // decode_csr
 
+   function string decode_cust2(bit[2:0] fun);
+      case(fun)
+	`FUNC_WRECC:       return "wecc";
+	`FUNC_FIXECC:      return "fecc";
+	default: return "???";
+      endcase
+   endfunction
+
    task automatic verify_branch(input [31:0] rs1, input[31:0] rs2, input take, input [2:0] fun);
       int do_take;
 
@@ -489,7 +497,8 @@ module main;
 	    `OPC_CUST2:
 	      begin
 		 opc = "cust2";
-		 fun = $sformatf("%03b", DUT.d2x_fun);
+		 fun = decode_cust2(DUT.d2x_fun);
+		 // fun = $sformatf("%03b", DUT.d2x_fun);
 		 args = $sformatf("%-4s %-4s %-4s", rd, rs1, rs2);
 	      end
            default:

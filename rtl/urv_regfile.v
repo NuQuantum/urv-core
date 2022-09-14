@@ -29,19 +29,22 @@
 `timescale 1ns/1ps
 
 module urv_regmem
+  #(
+    parameter g_width = 32
+   )
   (
-   input 	     clk_i,
+   input 		    clk_i,
 
-   input 	     en1_i,
-   input [4:0] 	     a1_i,
-   output reg [31:0] q1_o,
+   input 		    en1_i,
+   input [4:0] 		    a1_i,
+   output reg [g_width-1:0] q1_o,
 
-   input [4:0] 	     a2_i,
-   input [31:0]      d2_i,
-   input 	     we2_i
+   input [4:0] 		    a2_i,
+   input [g_width-1:0] 	    d2_i,
+   input 		    we2_i
    );
 
-   reg [31:0] 	     ram [0:31];
+   reg [g_width-1:0] 	    ram [0:31];
 
    always@(posedge clk_i)
      if(en1_i)
@@ -64,39 +67,55 @@ module urv_regmem
 endmodule
 
 module urv_regfile
-(
- input 	       clk_i,
- input 	       rst_i,
+  #(
+    parameter g_with_ecc = 0
+    )
+  (
+   input 	     clk_i,
+   input 	     rst_i,
+   
+   input 	     d_stall_i,
 
- input 	       d_stall_i,
+   input [4:0] 	     rf_rs1_i,
+   input [4:0] 	     rf_rs2_i,
 
- input [4:0]   rf_rs1_i,
- input [4:0]   rf_rs2_i,
+   input [4:0] 	     d_rs1_i,
+   input [4:0] 	     d_rs2_i,
 
- input [4:0]   d_rs1_i,
- input [4:0]   d_rs2_i,
+   output reg [31:0] x_rs1_value_o,
+   output reg [31:0] x_rs2_value_o,
+   output reg 	     x_rs1_ecc_err_o,
+   output reg 	     x_rs2_ecc_err_o,
 
- output reg [31:0] x_rs1_value_o,
- output reg [31:0] x_rs2_value_o,
+   input [4:0] 	     w_rd_i,
+   input [31:0]      w_rd_value_i,
+   input [6:0] 	     w_rd_ecc_i,
+   input 	     w_rd_store_i,
 
- input [4:0]   w_rd_i,
- input [31:0]  w_rd_value_i,
- input 	       w_rd_store_i,
-
- input 	       w_bypass_rd_write_i,
- input [31:0]  w_bypass_rd_value_i
-
+   input 	     w_bypass_rd_write_i,
+   input [31:0]      w_bypass_rd_value_i
  );
 
+   localparam g_width = 32 + (g_with_ecc ? 7 : 0);
 
-   wire [31:0] rs1_regfile;
-   wire [31:0] rs2_regfile;
+   wire [g_width-1:0] rs1_regfile;
+   wire [g_width-1:0] rs2_regfile;
    //  By adding rst_i, register 0 is written (to 0) during reset.  This is
    //  required on some flash FPGA (like smartfusion2 or ProASIC3) which
    //  doesn't support initialized RAMs.
    wire        write  = rst_i || (w_rd_store_i && (w_rd_i != 0));
 
-   urv_regmem bank0
+   wire        rs1_ecc_err;
+   wire        rs2_ecc_err;
+
+   //  Value to be written in the register file
+   wire [g_width-1:0] w_rd_value;
+
+   assign w_rd_value = g_with_ecc ? {w_rd_ecc_i, w_rd_value_i} : w_rd_value_i;
+
+   urv_regmem
+     #(.g_width(g_width))
+   bank0
      (
       .clk_i(clk_i),
       .en1_i(!d_stall_i),
@@ -104,11 +123,12 @@ module urv_regfile
       .q1_o(rs1_regfile),
 
       .a2_i(w_rd_i),
-      .d2_i(w_rd_value_i),
+      .d2_i(w_rd_value),
       .we2_i (write));
 
-
-   urv_regmem bank1
+   urv_regmem
+     #(.g_width(g_width))
+   bank1
      (
       .clk_i(clk_i),
       .en1_i(!d_stall_i),
@@ -116,14 +136,34 @@ module urv_regfile
       .q1_o(rs2_regfile),
 
       .a2_i (w_rd_i),
-      .d2_i (w_rd_value_i),
+      .d2_i (w_rd_value),
       .we2_i (write)
       );
 
-   wire        rs1_bypass_x = w_bypass_rd_write_i && (w_rd_i == d_rs1_i) && (w_rd_i != 0);
-   wire        rs2_bypass_x = w_bypass_rd_write_i && (w_rd_i == d_rs2_i) && (w_rd_i != 0);
+   generate
+      if (g_with_ecc) begin
+	 wire [6:0] 	      rs1_ecc;
+	 wire [6:0] 	      rs2_ecc;
+	 urv_ecc ecc_rs1
+	   (.dat_i(rs1_regfile[31:0]),
+	    .ecc_o(rs1_ecc));
+	 urv_ecc ecc_rs2
+	   (.dat_i(rs2_regfile[31:0]),
+	    .ecc_o(rs2_ecc));
 
-   reg 	       rs1_bypass_w, rs2_bypass_w;
+	 assign rs1_ecc_err = |(rs1_ecc ^ rs1_regfile[38:32]);
+	 assign rs2_ecc_err = |(rs2_ecc ^ rs2_regfile[38:32]);
+      end
+      else begin
+	 assign rs1_ecc_err = 1'b0;
+	 assign rs2_ecc_err = 1'b0;
+      end
+   endgenerate
+
+   wire  rs1_bypass_x = w_bypass_rd_write_i && (w_rd_i == d_rs1_i) && (w_rd_i != 0);
+   wire  rs2_bypass_x = w_bypass_rd_write_i && (w_rd_i == d_rs2_i) && (w_rd_i != 0);
+
+   reg   rs1_bypass_w, rs2_bypass_w;
 
    always@(posedge clk_i)
      if(rst_i)
@@ -145,20 +185,38 @@ module urv_regfile
      begin
 	case ( {rs1_bypass_x, rs1_bypass_w } ) // synthesis parallel_case full_case
 	  2'b10, 2'b11:
-	    x_rs1_value_o <= w_bypass_rd_value_i;
+	    begin
+	       x_rs1_value_o <= w_bypass_rd_value_i;
+	       x_rs1_ecc_err_o <= 1'b0;
+	    end
 	  2'b01:
-	    x_rs1_value_o <= bypass_w;
+	    begin
+	       x_rs1_value_o <= bypass_w;
+	       x_rs1_ecc_err_o <= 1'b0;
+	    end
 	  default:
-	    x_rs1_value_o <= rs1_regfile;
+	    begin
+	       x_rs1_value_o <= rs1_regfile[31:0];
+	       x_rs1_ecc_err_o <= rs1_ecc_err;
+	    end
 	endcase // case ( {rs1_bypass_x, rs1_bypass_w } )
 
 	case ( {rs2_bypass_x, rs2_bypass_w } ) // synthesis parallel_case full_case
 	  2'b10, 2'b11:
-	    x_rs2_value_o <= w_bypass_rd_value_i;
+	    begin
+	       x_rs2_value_o <= w_bypass_rd_value_i;
+	       x_rs2_ecc_err_o <= 1'b0;
+	    end
 	  2'b01:
-	    x_rs2_value_o <= bypass_w;
+	    begin
+	       x_rs2_value_o <= bypass_w;
+	       x_rs2_ecc_err_o <= 1'b0;
+	    end
 	  default:
-	    x_rs2_value_o <= rs2_regfile;
+	    begin
+	       x_rs2_value_o <= rs2_regfile[31:0];
+	       x_rs2_ecc_err_o <= rs2_ecc_err;
+	    end
 	endcase // case ( {rs2_bypass_x, rs2_bypass_w } )
      end // always@ *
 

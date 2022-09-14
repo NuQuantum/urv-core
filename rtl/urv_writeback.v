@@ -29,34 +29,39 @@
 `timescale 1ns/1ps
 
 module urv_writeback
+  #(
+    parameter g_with_ecc = 0
+   )
   (
-   input 	     clk_i,
-   input 	     rst_i,
+   input 	 clk_i,
+   input 	 rst_i,
 
-   output 	     w_stall_req_o,
-   
-   input [2:0] 	     x_fun_i,
-   input 	     x_load_i,
-   input 	     x_store_i,
-   
-   input [31:0]      x_dm_addr_i,
-   input [4:0] 	     x_rd_i,
-   input [31:0]      x_rd_value_i,
-   input 	     x_rd_write_i,
-   input 	     x_valid_i,
-   
+   output 	 w_stall_req_o,
 
-   input [31:0]      x_shifter_rd_value_i,
-   input [31:0]      x_multiply_rd_value_i,
-   input [1:0] 	     x_rd_source_i,
+   input [2:0] 	 x_fun_i,
+   input 	 x_load_i,
+   input 	 x_store_i,
 
-   input [31:0]      dm_data_l_i,
-   input 	     dm_load_done_i,
-   input 	     dm_store_done_i,
-   
-   output [31:0]     rf_rd_value_o,
-   output [4:0]      rf_rd_o,
-   output 	     rf_rd_write_o
+   input [31:0]  x_dm_addr_i,
+   input [4:0] 	 x_rd_i,
+   input [31:0]  x_rd_value_i,
+   input 	 x_rd_write_i,
+   input 	 x_valid_i,
+
+
+   input [31:0]  x_shifter_rd_value_i,
+   input [31:0]  x_multiply_rd_value_i,
+   input [1:0] 	 x_rd_source_i,
+   input 	 x_ecc_flip_i,
+
+   input [31:0]  dm_data_l_i,
+   input 	 dm_load_done_i,
+   input 	 dm_store_done_i,
+
+   output [31:0] rf_rd_value_o,
+   output [4:0]  rf_rd_o,
+   output [6:0]  rf_rd_ecc_o,
+   output 	 rf_rd_write_o
    );
 
    reg [31:0] 	 load_value;
@@ -128,6 +133,19 @@ module urv_writeback
        if(rf_rd_write  && (^rf_rd_value === 1'hx) )
 	  $error("Attempt to write unknown value to reg %x", x_rd_i);
    // synthesis translate_on
+
+   generate
+      if (g_with_ecc) begin
+	 wire [6:0] rf_rd_ecc;
+      
+	 urv_ecc gen_ecc
+	   (.dat_i(rf_rd_value),
+	    .ecc_o(rf_rd_ecc));
+	 assign rf_rd_ecc_o = rf_rd_ecc ^ x_ecc_flip_i;
+      end
+      else
+	assign rf_rd_ecc_o = 6'bx;
+   endgenerate
 
    assign rf_rd_write_o = rf_rd_write;
    assign rf_rd_value_o = rf_rd_value;

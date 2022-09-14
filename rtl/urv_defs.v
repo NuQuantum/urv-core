@@ -82,6 +82,10 @@
 `define CSR_OP_CSRRSI 3'b110
 `define CSR_OP_CSRRCI 3'b111
 
+// funct3 for OPC_CUST2
+// (they use shifter functions)
+`define FUNC_WRECC `FUNC_SL
+`define FUNC_FIXECC `FUNC_SR
 
 `define RD_SOURCE_ALU 3'b000
 `define RD_SOURCE_SHIFTER 3'b010

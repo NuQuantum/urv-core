@@ -45,7 +45,8 @@ module urv_exec
 
    input [31:0]      rf_rs1_value_i,
    input [31:0]      rf_rs2_value_i,
-
+   input 	     rf_rs1_ecc_err_i,
+   input 	     rf_rs2_ecc_err_i,
 
    input 	     d_valid_i,
 
@@ -67,6 +68,7 @@ module urv_exec
    input 	     d_is_divide_i,
    input 	     d_is_multiply_i,
    input 	     d_is_undef_i,
+   input 	     d_is_write_ecc_i,
 
    input [31:0]      d_alu_op1_i,
    input [31:0]      d_alu_op2_i,
@@ -99,6 +101,7 @@ module urv_exec
    output reg [1:0]  w_rd_source_o,
    output [31:0]     w_rd_shifter_o,
    output [31:0]     w_rd_multiply_o,
+   output reg 	     w_ecc_flip_o,
 
 
    // Data memory I/F (address/store)
@@ -124,7 +127,6 @@ module urv_exec
 
    //  Use rs1 and rs2, it's shorter; but keep long name for the ports.
    wire [31:0] 	 rs1, rs2;
-
    assign rs1 = rf_rs1_value_i;
    assign rs2 = rf_rs2_value_i;
 
@@ -274,6 +276,8 @@ module urv_exec
        `FUNC_XOR:    alu_result <= alu_op1 ^ alu_op2;
        `FUNC_OR:     alu_result <= alu_op1 | alu_op2;
        `FUNC_AND:    alu_result <= alu_op1 & alu_op2;
+       `FUNC_FIXECC: alu_result <= rf_rs1_ecc_err_i ? alu_op2 : alu_op1;
+       `FUNC_WRECC:  alu_result <= alu_op1;
        `FUNC_SLT,
 	 `FUNC_SLTU: alu_result <= {31'b0, alu_sub[32]};
        default:      alu_result <= 32'hx;
@@ -398,6 +402,14 @@ module urv_exec
              x_interrupt <= 0;
              x_exception_cause <= `CAUSE_ILLEGAL_INSN;
           end
+	else if ((d_use_rs1_i && rf_rs1_ecc_err_i)
+		 || (d_use_rs2_i && rf_rs2_ecc_err_i))
+	  begin
+	     // Ecc error
+	     x_exception <= 1;
+             x_interrupt <= 0;
+             x_exception_cause <= `CAUSE_ECC_ERROR;
+	  end
         else if (unaligned_addr
                  && (d_opcode_i == `OPC_LOAD || d_opcode_i == `OPC_STORE))
           begin
@@ -497,6 +509,7 @@ module urv_exec
           f_dbg_toggle_o <= 0;
 	  w_load_o <= 0;
 	  w_store_o <= 0;
+	  w_ecc_flip_o <= 0;
           //  Values so that 0 could be written to register 0.
           w_rd_value_o <= 0;
           w_rd_o <= 0;
@@ -514,6 +527,7 @@ module urv_exec
 	       f_branch_target_o <= branch_target;
                w_rd_o <= d_rd_i;
 	       w_rd_value_o <= rd_value;
+	       w_ecc_flip_o <= d_is_write_ecc_i & rs2[0];
 
 	       f_branch_take <= branch_take && !x_kill_i && d_valid_i;
                f_dbg_toggle_o <= g_with_hw_debug && d_is_ebreak_i && !x_kill_i && d_valid_i;

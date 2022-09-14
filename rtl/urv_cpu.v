@@ -36,6 +36,7 @@ module urv_cpu
     parameter g_with_hw_mulh = 1, //  Force mulh if mul is > 0 (for compatibility).
     parameter g_with_hw_mul = 1,  // 0: no multiply, 1: 32x32 mul. 2: mulh
     parameter g_with_hw_debug = 0,
+    parameter g_with_ecc = 0,
     parameter g_with_compressed_insns = 0
    )
    (
@@ -109,6 +110,7 @@ module urv_cpu
    // X2/W->RF interface
    wire [4:0] 	 rf_rd;
    wire [31:0] 	 rf_rd_value;
+   wire [6:0] 	 rf_rd_ecc;
    wire 	 rf_rd_write;
 
    // D->X1 stage interface
@@ -121,6 +123,7 @@ module urv_cpu
    wire [4:0] 	 d2x_opcode;
    wire 	 d2x_shifter_sign;
    wire 	 d2x_is_load, d2x_is_store, d2x_is_undef;
+   wire 	 d2x_is_write_ecc;
    wire [31:0] 	 d2x_imm;
    wire 	 d2x_is_signed_alu_op;
    wire 	 d2x_is_add_o;
@@ -146,9 +149,11 @@ module urv_cpu
    wire 	 x2w_load;
    wire [1:0] 	 x2w_rd_source;
    wire 	 x2w_valid;
+   wire 	 x2w_ecc_flip;
 
    // Register file signals
    wire [31:0] 	 x_rs2_value, x_rs1_value;
+   wire 	 x_rs1_ecc_err, x_rs2_ecc_err;
    wire [31:0] 	 rf_bypass_rd_value = x2w_rd_value;
    wire  	 rf_bypass_rd_write = rf_rd_write && !x2w_load; // multiply/shift too?
 
@@ -236,6 +241,7 @@ module urv_cpu
       .x_is_load_o(d2x_is_load),
       .x_is_store_o(d2x_is_store),
       .x_is_undef_o(d2x_is_undef),
+      .x_is_write_ecc_o(d2x_is_write_ecc),
       .x_is_multiply_o(d2x_is_multiply),
       .x_is_divide_o(d2x_is_divide),
       .x_rd_source_o(d2x_rd_source),
@@ -252,7 +258,9 @@ module urv_cpu
       );
 
    // Register File (RF)
-   urv_regfile regfile
+   urv_regfile
+     #(.g_with_ecc(g_with_ecc))
+   regfile
      (
       .clk_i(clk_i),
       .rst_i(rst_i),
@@ -267,9 +275,12 @@ module urv_cpu
 
       .x_rs1_value_o(x_rs1_value),
       .x_rs2_value_o(x_rs2_value),
+      .x_rs1_ecc_err_o(x_rs1_ecc_err),
+      .x_rs2_ecc_err_o(x_rs2_ecc_err),
 
       .w_rd_i(rf_rd),
       .w_rd_value_i(rf_rd_value),
+      .w_rd_ecc_i(rf_rd_ecc),
       .w_rd_store_i(rf_rd_write),
 
       .w_bypass_rd_write_i(rf_bypass_rd_write),
@@ -298,6 +309,8 @@ module urv_cpu
       // from register file
       .rf_rs1_value_i(x_rs1_value),
       .rf_rs2_value_i(x_rs2_value),
+      .rf_rs1_ecc_err_i(x_rs1_ecc_err),
+      .rf_rs2_ecc_err_i(x_rs2_ecc_err),
 
       // from D stage
       .d_valid_i(d2x_valid),
@@ -316,6 +329,7 @@ module urv_cpu
       .d_is_load_i(d2x_is_load),
       .d_is_store_i(d2x_is_store),
       .d_is_undef_i(d2x_is_undef),
+      .d_is_write_ecc_i(d2x_is_write_ecc),
       .d_is_multiply_i(d2x_is_multiply),
       .d_is_divide_i(d2x_is_divide),
       .d_alu_op1_i(d2x_alu_op1),
@@ -346,6 +360,7 @@ module urv_cpu
       .w_rd_source_o(x2w_rd_source),
       .w_rd_shifter_o(x2w_rd_shifter),
       .w_rd_multiply_o(x2w_rd_multiply),
+      .w_ecc_flip_o(x2w_ecc_flip),
 
       // Data memory I/F
       .dm_addr_o(dm_addr_o),
@@ -366,7 +381,9 @@ module urv_cpu
    );
 
    // Execute 2/Writeback stage
-   urv_writeback writeback
+   urv_writeback
+     #(.g_with_ecc(g_with_ecc))
+   writeback
      (
       .clk_i(clk_i),
       .rst_i(rst_i),
@@ -386,6 +403,7 @@ module urv_cpu
       .x_shifter_rd_value_i(x2w_rd_shifter),
       .x_multiply_rd_value_i(x2w_rd_multiply),
       .x_dm_addr_i(x2w_dm_addr),
+      .x_ecc_flip_i(x2w_ecc_flip),
 
       // Data memory I/F
       .dm_data_l_i(dm_data_l_i),
@@ -394,6 +412,7 @@ module urv_cpu
 
       // to register file
       .rf_rd_value_o(rf_rd_value),
+      .rf_rd_ecc_o(rf_rd_ecc),
       .rf_rd_o(rf_rd),
       .rf_rd_write_o(rf_rd_write)
    );

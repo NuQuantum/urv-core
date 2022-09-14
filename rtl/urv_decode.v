@@ -62,6 +62,7 @@ module urv_decode
  output reg 	   x_is_load_o,
  output reg 	   x_is_store_o,
  output reg 	   x_is_undef_o,
+ output reg 	   x_is_write_ecc_o,
  output reg [2:0]  x_rd_source_o,
  output 	   x_rd_write_o,
  output reg [11:0] x_csr_sel_o,
@@ -305,6 +306,8 @@ module urv_decode
 
 	  x_is_mul <= d_is_mul && g_with_hw_mul;
 
+	  x_is_write_ecc_o <= d_opcode == `OPC_CUST2 && d_fun == `FUNC_WRECC;
+
 	  case (d_opcode)
 	    `OPC_BRANCH:
 	      x_is_signed_alu_op_o <= (d_fun == `BRA_GE || d_fun == `BRA_LT);
@@ -369,6 +372,7 @@ module urv_decode
 	    x_rd_source_o <= `RD_SOURCE_CSR;
 	  else if (d_opcode == `OPC_OP && f_ir_i[25])
 	    begin
+	       // mul/div
 	       if( !d_fun[2] )
 		 begin
 		    if( d_fun == `FUNC_MUL )
@@ -389,6 +393,8 @@ module urv_decode
 	      x_rd_write <= d_rd_nonzero;
 	    `OPC_SYSTEM:
 	      x_rd_write <= d_rd_nonzero && (d_fun != 0); // CSR instructions write to RD
+	    `OPC_CUST2:
+	      x_rd_write <= 1'b1;
 	    default:
 	      x_rd_write <= 0;
 	  endcase // case (d_opcode)
