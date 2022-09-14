@@ -111,6 +111,7 @@ module urv_cpu
    wire [4:0] 	 rf_rd;
    wire [31:0] 	 rf_rd_value;
    wire [6:0] 	 rf_rd_ecc;
+   wire [1:0] 	 rf_rd_ecc_flip;
    wire 	 rf_rd_write;
 
    // D->X1 stage interface
@@ -149,7 +150,7 @@ module urv_cpu
    wire 	 x2w_load;
    wire [1:0] 	 x2w_rd_source;
    wire 	 x2w_valid;
-   wire 	 x2w_ecc_flip;
+   wire [1:0]	 x2w_ecc_flip;
 
    // Register file signals
    wire [31:0] 	 x_rs2_value, x_rs1_value;
@@ -281,6 +282,7 @@ module urv_cpu
       .w_rd_i(rf_rd),
       .w_rd_value_i(rf_rd_value),
       .w_rd_ecc_i(rf_rd_ecc),
+      .w_rd_ecc_flip_i(rf_rd_ecc_flip),
       .w_rd_store_i(rf_rd_write),
 
       .w_bypass_rd_write_i(rf_bypass_rd_write),
@@ -413,6 +415,7 @@ module urv_cpu
       // to register file
       .rf_rd_value_o(rf_rd_value),
       .rf_rd_ecc_o(rf_rd_ecc),
+      .rf_rd_ecc_flip_o(rf_rd_ecc_flip),
       .rf_rd_o(rf_rd),
       .rf_rd_write_o(rf_rd_write)
    );

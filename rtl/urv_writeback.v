@@ -52,7 +52,7 @@ module urv_writeback
    input [31:0]  x_shifter_rd_value_i,
    input [31:0]  x_multiply_rd_value_i,
    input [1:0] 	 x_rd_source_i,
-   input 	 x_ecc_flip_i,
+   input [1:0] 	 x_ecc_flip_i,
 
    input [31:0]  dm_data_l_i,
    input 	 dm_load_done_i,
@@ -61,6 +61,7 @@ module urv_writeback
    output [31:0] rf_rd_value_o,
    output [4:0]  rf_rd_o,
    output [6:0]  rf_rd_ecc_o,
+   output [1:0]  rf_rd_ecc_flip_o,
    output 	 rf_rd_write_o
    );
 
@@ -68,45 +69,43 @@ module urv_writeback
 
    // generate load value
    always@*
-     begin
-	case (x_fun_i)
-	  `LDST_B:
-	    case ( x_dm_addr_i [1:0] )
-	      2'b00:  load_value <= {{24{dm_data_l_i[7]}}, dm_data_l_i[7:0] };
-	      2'b01:  load_value <= {{24{dm_data_l_i[15]}}, dm_data_l_i[15:8] };
-	      2'b10:  load_value <= {{24{dm_data_l_i[23]}}, dm_data_l_i[23:16] };
-	      2'b11:  load_value <= {{24{dm_data_l_i[31]}}, dm_data_l_i[31:24] };
-	      default: load_value <= 32'hx;
-	    endcase // case ( x_dm_addr_i [1:0] )
+     case (x_fun_i)
+       `LDST_B:
+	 case ( x_dm_addr_i [1:0] )
+	   2'b00:  load_value <= {{24{dm_data_l_i[7]}}, dm_data_l_i[7:0] };
+	   2'b01:  load_value <= {{24{dm_data_l_i[15]}}, dm_data_l_i[15:8] };
+	   2'b10:  load_value <= {{24{dm_data_l_i[23]}}, dm_data_l_i[23:16] };
+	   2'b11:  load_value <= {{24{dm_data_l_i[31]}}, dm_data_l_i[31:24] };
+	   default: load_value <= 32'hx;
+	 endcase // case ( x_dm_addr_i [1:0] )
 
-	  `LDST_BU:
-	    case ( x_dm_addr_i [1:0] )
-	      2'b00:  load_value <= {24'h0, dm_data_l_i[7:0] };
-	      2'b01:  load_value <= {24'h0, dm_data_l_i[15:8] };
-	      2'b10:  load_value <= {24'h0, dm_data_l_i[23:16] };
-	      2'b11:  load_value <= {24'h0, dm_data_l_i[31:24] };
-	      default: load_value <= 32'hx;
-	    endcase // case ( x_dm_addr_i [1:0] )
+       `LDST_BU:
+	 case ( x_dm_addr_i [1:0] )
+	   2'b00:  load_value <= {24'h0, dm_data_l_i[7:0] };
+	   2'b01:  load_value <= {24'h0, dm_data_l_i[15:8] };
+	   2'b10:  load_value <= {24'h0, dm_data_l_i[23:16] };
+	   2'b11:  load_value <= {24'h0, dm_data_l_i[31:24] };
+	   default: load_value <= 32'hx;
+	 endcase // case ( x_dm_addr_i [1:0] )
 
-	  `LDST_H:
-	    case ( x_dm_addr_i [1:0] )
-	      2'b00, 2'b01: load_value <= {{16{dm_data_l_i[15]}}, dm_data_l_i[15:0] };
-	      2'b10, 2'b11: load_value <= {{16{dm_data_l_i[31]}}, dm_data_l_i[31:16] };
-	      default: load_value <= 32'hx;
-	    endcase // case ( x_dm_addr_i [1:0] )
+       `LDST_H:
+	 case ( x_dm_addr_i [1] )
+	   1'b0:    load_value <= {{16{dm_data_l_i[15]}}, dm_data_l_i[15:0] };
+	   1'b1:    load_value <= {{16{dm_data_l_i[31]}}, dm_data_l_i[31:16] };
+	   default: load_value <= 32'hx;
+	 endcase // case ( x_dm_addr_i [1:0] )
 
-	  `LDST_HU:
-	    case ( x_dm_addr_i [1:0] )
-	      2'b00, 2'b01:  load_value <= {16'h0, dm_data_l_i[15:0] };
-	      2'b10, 2'b11:  load_value <= {16'h0, dm_data_l_i[31:16] };
-	      default: load_value <= 32'hx;
-	    endcase // case ( x_dm_addr_i [1:0] )
+       `LDST_HU:
+	 case ( x_dm_addr_i [1] )
+	   1'b0:    load_value <= {16'h0, dm_data_l_i[15:0] };
+	   1'b1:    load_value <= {16'h0, dm_data_l_i[31:16] };
+	   default: load_value <= 32'hx;
+	 endcase // case ( x_dm_addr_i [1:0] )
 
-	  `LDST_L: load_value <= dm_data_l_i;
+       `LDST_L: load_value <= dm_data_l_i;
 
-	  default: load_value <= 32'hx;
-	endcase // case (d_fun_i)
-     end // always@ *
+       default: load_value <= 32'hx;
+     endcase // case (d_fun_i)
 
    reg rf_rd_write;
    reg [31:0] rf_rd_value;
@@ -141,7 +140,8 @@ module urv_writeback
 	 urv_ecc gen_ecc
 	   (.dat_i(rf_rd_value),
 	    .ecc_o(rf_rd_ecc));
-	 assign rf_rd_ecc_o = rf_rd_ecc ^ x_ecc_flip_i;
+	 assign rf_rd_ecc_o = rf_rd_ecc;
+	 assign rf_rd_ecc_flip_o = x_ecc_flip_i;
       end
       else
 	assign rf_rd_ecc_o = 6'bx;

@@ -90,6 +90,7 @@ module urv_regfile
    input [4:0] 	     w_rd_i,
    input [31:0]      w_rd_value_i,
    input [6:0] 	     w_rd_ecc_i,
+   input [1:0] 	     w_rd_ecc_flip_i,
    input 	     w_rd_store_i,
 
    input 	     w_bypass_rd_write_i,
@@ -98,6 +99,8 @@ module urv_regfile
 
    localparam g_width = 32 + (g_with_ecc ? 7 : 0);
 
+   wire [g_width-1:0] w_rd_value_1;
+   wire [g_width-1:0] w_rd_value_2;
    wire [g_width-1:0] rs1_regfile;
    wire [g_width-1:0] rs2_regfile;
    wire        write  = w_rd_store_i;
@@ -108,20 +111,16 @@ module urv_regfile
    //  Value to be written in the register file
    wire [g_width-1:0] w_rd_value;
 
-   assign w_rd_value = g_with_ecc ? {w_rd_ecc_i, w_rd_value_i} : w_rd_value_i;
-
-   urv_regmem
-     #(.g_width(g_width))
-   bank0
-     (
-      .clk_i(clk_i),
-      .en1_i(!d_stall_i),
-      .a1_i(rf_rs1_i),
-      .q1_o(rs1_regfile),
-
-      .a2_i(w_rd_i),
-      .d2_i(w_rd_value),
-      .we2_i (write));
+   generate
+      if (g_with_ecc) begin
+	 assign w_rd_value_1 = {w_rd_ecc_i ^ w_rd_ecc_flip_i[0], w_rd_value_i};
+	 assign w_rd_value_2 = {w_rd_ecc_i ^ w_rd_ecc_flip_i[1], w_rd_value_i};
+      end
+      else begin
+	 assign w_rd_value_1 = w_rd_value_i;
+	 assign w_rd_value_2 = w_rd_value_i;
+      end
+   endgenerate
 
    urv_regmem
      #(.g_width(g_width))
@@ -129,11 +128,24 @@ module urv_regfile
      (
       .clk_i(clk_i),
       .en1_i(!d_stall_i),
+      .a1_i(rf_rs1_i),
+      .q1_o(rs1_regfile),
+
+      .a2_i(w_rd_i),
+      .d2_i(w_rd_value_1),
+      .we2_i (write));
+
+   urv_regmem
+     #(.g_width(g_width))
+   bank2
+     (
+      .clk_i(clk_i),
+      .en1_i(!d_stall_i),
       .a1_i(rf_rs2_i),
       .q1_o(rs2_regfile),
 
       .a2_i (w_rd_i),
-      .d2_i (w_rd_value),
+      .d2_i (w_rd_value_2),
       .we2_i (write)
       );
 
