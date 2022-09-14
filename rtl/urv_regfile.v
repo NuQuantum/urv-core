@@ -100,10 +100,7 @@ module urv_regfile
 
    wire [g_width-1:0] rs1_regfile;
    wire [g_width-1:0] rs2_regfile;
-   //  By adding rst_i, register 0 is written (to 0) during reset.  This is
-   //  required on some flash FPGA (like smartfusion2 or ProASIC3) which
-   //  doesn't support initialized RAMs.
-   wire        write  = rst_i || (w_rd_store_i && (w_rd_i != 0));
+   wire        write  = w_rd_store_i;
 
    wire        rs1_ecc_err;
    wire        rs2_ecc_err;
