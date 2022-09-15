@@ -53,6 +53,8 @@ module ICpuTestWrapper
 
    parameter int mem_size = 16384;
 
+   wire        cpu_fault[n_configs];
+
    wire [31:0] im_addr_m[n_configs];
    wire [31:0] dm_addr_m[n_configs];
    wire [31:0] dm_data_s_m[n_configs];
@@ -66,9 +68,12 @@ module ICpuTestWrapper
    int 	       r_active_cpu = 0;
 
 
+   wire        fault = cpu_fault[r_active_cpu];
+
    wire [31:0] im_addr = im_addr_m[r_active_cpu];
    reg [31:0] im_data;
    reg        im_valid;
+
 
    wire [31:0] dm_addr = dm_addr_m[r_active_cpu];
    wire [31:0] dm_data_s = dm_data_s_m[r_active_cpu];
@@ -87,6 +92,7 @@ module ICpuTestWrapper
 
    string current_msg;
    int 	  test_complete = 0;
+   int 	  fault_expected = 0;
 
    task automatic selectConfiguration( int cpu );
       r_active_cpu = cpu;
@@ -120,6 +126,7 @@ module ICpuTestWrapper
 
       current_msg = "";
       test_complete = 0;
+      fault_expected = 0;
 
       rst <= 1;
       @(posedge clk_i);
@@ -216,6 +223,8 @@ module ICpuTestWrapper
 
 	    .irq_i ( irq ),
 
+	    .fault_o (cpu_fault[i]),
+
 	    // instruction mem I/F
 	    .im_addr_o(im_addr_m[i]),
             .im_rd_o(),
@@ -247,20 +256,24 @@ module ICpuTestWrapper
      end
 
 
-   always@(posedge clk_i)
+   always@(posedge clk_i) begin
      if(dm_store)
        begin
 	  automatic bit [7:0] chr = dm_data_s[7:0];
 
 	  if(dm_addr == 'h100000)
-	    begin
-	       current_msg = $sformatf("%s%c", current_msg, chr);
-	    end
+	    current_msg = {current_msg, chr};
 	  else if(dm_addr == 'h100004)
-	    begin
-	       test_complete = 1;
-	    end
+	    test_complete = 1;
+	  else if(dm_addr == 'h100008)
+	    fault_expected = 1;
        end
+      if (fault) begin
+	 current_msg = {current_msg, fault_expected ? "Test passed\n" : "Fault" };
+
+	 test_complete = 1;
+      end
+   end
 
 endmodule // ICpuTestWrapper
 
@@ -290,7 +303,7 @@ class ISATestRunner extends LoggerClient;
       automatic integer cnt = 0;
 
       // $display("runTest task");
-      
+
       DUT.runTest(filename);
 
       failedTest = 0;
@@ -308,10 +321,10 @@ class ISATestRunner extends LoggerClient;
            cnt++;
 	end
 
-      if ($sscanf( DUT.getTestResult(), "Test %d failed", failedTest ) == 1)
-	status = R_FAIL;
-      else
+      if (DUT.getTestResult() == "Test passed\n")
 	status = R_OK;
+      else
+	status = R_FAIL;
    endtask // runTest
 
    task automatic runAllTests( string test_dir, string list_file, inout int failCount);
@@ -342,7 +355,7 @@ class ISATestRunner extends LoggerClient;
 	   automatic string s;
 
            // $display("Run %s", tests[i]);
-           
+
 	   runTest({test_dir,"/",tests[i]}, status, failedTest );
 
 	   if ( status == R_OK )

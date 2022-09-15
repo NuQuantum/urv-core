@@ -177,6 +177,8 @@ module main;
 
       .irq_i(irq),
 
+      .fault_o(),
+
       // instruction mem I/F
       .im_addr_o(im_addr),
       .im_data_i(im_data),

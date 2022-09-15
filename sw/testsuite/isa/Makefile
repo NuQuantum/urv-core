@@ -28,7 +28,7 @@ RISCV_GCC_OPTS = $(ENTROPY) -mcmodel=medany -nostartfiles -fvisibility=hidden -m
 RISCV_OBJDUMP = $(RISCV_PREFIX)objdump --disassemble-all --disassemble-zeroes --section=.text --section=.text.startup --section=.text.init --section=.data
 RISCV_SIM = spike --extension=hwacha
 
-COMMON_SRCS = ../../common/crt0.S ../../common/irq.S emulate.o ../../common/test-common.c ../../common/printf.c ../../common/uart.c ../../common/vsprintf-xint.c
+COMMON_SRCS = ../../common/crt0.S ../../common/irq.S emulate.o ../../common/test-common.c
 
 vpath %.S $(isa_src_dir)
 
@@ -40,7 +40,7 @@ emulate.o: ../../common/emulate.c
 
 %.ram: %
 	$(RISCV_PREFIX)objcopy -O binary $< tmp.bin
-	../../genraminit tmp.bin 16384 > $@
+	../../genraminit tmp.bin 4096 > $@
 
 %.dump: %
 	$(RISCV_OBJDUMP) $< > $@
