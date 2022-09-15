@@ -63,6 +63,7 @@ module urv_decode
  output reg 	   x_is_store_o,
  output reg 	   x_is_undef_o,
  output reg 	   x_is_write_ecc_o,
+ output reg 	   x_is_fix_ecc_o,
  output reg [2:0]  x_rd_source_o,
  output 	   x_rd_write_o,
  output reg [11:0] x_csr_sel_o,
@@ -307,6 +308,7 @@ module urv_decode
 	  x_is_mul <= d_is_mul && g_with_hw_mul;
 
 	  x_is_write_ecc_o <= d_opcode == `OPC_CUST2 && d_fun == `FUNC_WRECC;
+	  x_is_fix_ecc_o <= d_opcode == `OPC_CUST2 && d_fun == `FUNC_FIXECC;
 
 	  case (d_opcode)
 	    `OPC_BRANCH:
@@ -408,10 +410,10 @@ module urv_decode
 	     x_csr_imm_o <= f_ir_i[19:15];
 	     x_csr_sel_o <= f_ir_i[31:20];
 	     x_is_csr_o <= (d_opcode == `OPC_SYSTEM) && (d_fun != 0);
-	     x_is_mret_o <= (d_opcode == `OPC_SYSTEM) && (d_fun == 0) && (f_ir_i [31:20] == 12'b0011000_00010);
+	     x_is_mret_o <= (d_opcode == `OPC_SYSTEM) && (d_fun == 0) && (f_ir_i [31:20] == `SYS_IMM_MRET);
 
 	     if(g_with_hw_debug)
-               x_is_ebreak_o <= (d_opcode == `OPC_SYSTEM) && (d_fun == 0) && (f_ir_i [31:20] == 12'b0000000_00001);
+               x_is_ebreak_o <= (d_opcode == `OPC_SYSTEM) && (d_fun == 0) && (f_ir_i [31:20] == `SYS_IMM_EBREAK);
 	     else
 	       x_is_ebreak_o <= 1'b0;
 	  end

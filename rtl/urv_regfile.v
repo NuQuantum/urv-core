@@ -59,7 +59,7 @@ module urv_regmem
       integer i;
 
       for(i=0;i<32; i=i+1) begin
-	 ram[i] = 0;
+	 ram[i] = 32'h0;
       end
    end
    // synthesis translate_on

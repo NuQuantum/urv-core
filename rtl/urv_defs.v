@@ -75,6 +75,7 @@
 `define FUNC_REMU 3'b111
 
 // funct3 for OPC_SYSTEM
+`define CSR_OP_PRIV  3'b000
 `define CSR_OP_CSRRW 3'b001
 `define CSR_OP_CSRRS 3'b010
 `define CSR_OP_CSRRC 3'b011
@@ -86,6 +87,10 @@
 // (they use shifter functions)
 `define FUNC_WRECC `FUNC_SL
 `define FUNC_FIXECC `FUNC_SR
+
+// Imm for OPC_SYSTEM, fun3 = 0
+`define SYS_IMM_MRET   12'b0011000_00010
+`define SYS_IMM_EBREAK 12'b0000000_00001
 
 `define RD_SOURCE_ALU 3'b000
 `define RD_SOURCE_SHIFTER 3'b010

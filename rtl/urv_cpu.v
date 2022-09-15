@@ -125,6 +125,7 @@ module urv_cpu
    wire 	 d2x_shifter_sign;
    wire 	 d2x_is_load, d2x_is_store, d2x_is_undef;
    wire 	 d2x_is_write_ecc;
+   wire 	 d2x_is_fix_ecc;
    wire [31:0] 	 d2x_imm;
    wire 	 d2x_is_signed_alu_op;
    wire 	 d2x_is_add_o;
@@ -243,6 +244,7 @@ module urv_cpu
       .x_is_store_o(d2x_is_store),
       .x_is_undef_o(d2x_is_undef),
       .x_is_write_ecc_o(d2x_is_write_ecc),
+      .x_is_fix_ecc_o(d2x_is_fix_ecc),
       .x_is_multiply_o(d2x_is_multiply),
       .x_is_divide_o(d2x_is_divide),
       .x_rd_source_o(d2x_rd_source),
@@ -332,6 +334,7 @@ module urv_cpu
       .d_is_store_i(d2x_is_store),
       .d_is_undef_i(d2x_is_undef),
       .d_is_write_ecc_i(d2x_is_write_ecc),
+      .d_is_fix_ecc_i(d2x_is_fix_ecc),
       .d_is_multiply_i(d2x_is_multiply),
       .d_is_divide_i(d2x_is_divide),
       .d_alu_op1_i(d2x_alu_op1),

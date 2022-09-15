@@ -69,6 +69,7 @@ module urv_exec
    input 	     d_is_multiply_i,
    input 	     d_is_undef_i,
    input 	     d_is_write_ecc_i,
+   input 	     d_is_fix_ecc_i,
 
    input [31:0]      d_alu_op1_i,
    input [31:0]      d_alu_op2_i,
@@ -270,6 +271,7 @@ module urv_exec
    wire [32:0] 	alu_sub = alu_addsub_op1 - alu_addsub_op2;
 
    // the rest of the ALU
+   // FIXECC and WRECC uses 'fun' bits used by shift
    always@*
      case (d_fun_i)
        `FUNC_ADD:    alu_result <= d_is_add_i ? alu_add[31:0] : alu_sub[31:0];
@@ -402,8 +404,9 @@ module urv_exec
              x_interrupt <= 0;
              x_exception_cause <= `CAUSE_ILLEGAL_INSN;
           end
-	else if ((d_use_rs1_i && rf_rs1_ecc_err_i)
-		 || (d_use_rs2_i && rf_rs2_ecc_err_i))
+	else if (!d_is_fix_ecc_i
+		 && ((d_use_rs1_i && rf_rs1_ecc_err_i)
+		     || (d_use_rs2_i && rf_rs2_ecc_err_i)))
 	  begin
 	     // Ecc error
 	     x_exception <= 1;
