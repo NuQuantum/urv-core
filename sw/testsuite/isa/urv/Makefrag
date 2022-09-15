@@ -3,7 +3,9 @@
 #-----------------------------------------------------------------------
 
 urv_ecc_tests = \
-	write_ecc
+	write_ecc \
+	fix_ecc_1 \
+	fix_ecc_2
 
 urv_p_tests = $(addprefix urv-p-, $(urv_ecc_tests))
 
