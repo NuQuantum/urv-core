@@ -82,7 +82,7 @@ module main;
 		   2:
 		     begin
 			data = line.atohex();
-			if (addr < 64)
+			if (dump_insns && addr < 64)
 			  $display("mem[%h]=%h", addr, data);
 			mem[addr % mem_size] = data;
 			if (c != "\n") begin
@@ -124,10 +124,12 @@ module main;
           begin
              if (dm_addr == 'h100000)
                begin
-	          $display("\n ****** TX '%c' \n", dm_data_s[7:0]) ;
+	          $display(" ****** TX '%c'", dm_data_s[7:0]) ;
 	          $fwrite(f_console,"%c", dm_data_s[7:0]);
 	          $fflush(f_console);
                end
+             else if (dm_addr == 'h100004)
+	       $stop;
              else if (dm_addr < 'h100000)
                begin
 	          if(dm_data_select[0])
@@ -165,7 +167,8 @@ module main;
      #(
        .g_with_hw_mulh(1),
        .g_with_hw_div(0),
-       .g_with_hw_debug(1)
+       .g_with_hw_debug(1),
+       .g_with_ecc(1)
        )
    DUT
      (
@@ -304,8 +307,8 @@ module main;
 
    function string decode_cust2(bit[2:0] fun);
       case(fun)
-	`FUNC_WRECC:       return "wecc";
-	`FUNC_FIXECC:      return "fecc";
+	`FUNC_WRECC:       return "wrecc";
+	`FUNC_FIXECC:      return "fixecc";
 	default: return "???";
       endcase
    endfunction
@@ -466,29 +469,41 @@ module main;
 	      end
 	    `OPC_SYSTEM:
 	      begin
+		 opc = "sys";
 		 case (DUT.d2x_fun)
+		   `CSR_OP_PRIV: begin
+		      args = "";
+		      case (DUT.d2x_csr_sel)
+			`SYS_IMM_MRET:
+			  fun = "mret";
+			`SYS_IMM_EBREAK:
+			  fun = "ebreak";
+			default:
+			  fun = $sformatf("%x", DUT.d2x_csr_sel);
+		      endcase
+		   end
 		   `CSR_OP_CSRRWI:  begin
-		      opc = "csrrwi";
+		      fun = "csrrwi";
 		      args = $sformatf("%-4s %-4s 0x%08x", rd, decode_csr(DUT.d2x_csr_sel), ((DUT.d2x_csr_imm)));
 		   end
 		   `CSR_OP_CSRRSI:  begin
-		      opc = "csrrsi";
+		      fun = "csrrsi";
 		      args = $sformatf("%-4s %-4s 0x%08x", rd, decode_csr(DUT.d2x_csr_sel), ((DUT.d2x_csr_imm)));
 		   end
 		   `CSR_OP_CSRRCI:  begin
-		      opc = "csrrci";
+		      fun = "csrrci";
 		      args = $sformatf("%-4s %-4s 0x%08x", rd, decode_csr(DUT.d2x_csr_sel), ((DUT.d2x_csr_imm)));
 		   end
 		   `CSR_OP_CSRRW: begin
-		      opc = "csrrw";
+		      fun = "csrrw";
 		      args = $sformatf("%-4s %-4s %-4s [0x%08x]", rd, decode_csr(DUT.d2x_csr_sel), rs1, DUT.execute.rs1);
 		   end
 		   `CSR_OP_CSRRS: begin
-		      opc = "csrrs";
+		      fun = "csrrs";
 		      args = $sformatf("%-4s %-4s %-4s [0x%08x]", rd, decode_csr(DUT.d2x_csr_sel), rs1, DUT.execute.rs1);
 		   end
 		   `CSR_OP_CSRRC: begin
-		      opc = "csrrc";
+		      fun = "csrrc";
 		      args = $sformatf("%-4s %-4s %-4s [0x%08x]", rd, decode_csr(DUT.d2x_csr_sel), rs1, DUT.execute.rs1);
 		   end
 	         endcase // case (d_fun_i)
@@ -509,7 +524,7 @@ module main;
              end
 	  endcase // case (d2x_opcode)
 
-	  $display("%08x [%d]: %-8s %-4s %s",
+	  $display("%08x [%d]: %-8s %-6s %s",
                    DUT.execute.d_pc_i, cycles, opc, fun, args);
 //  	  $fwrite(f_exec_log,"%08x: %-8s %-4s %s\n",
 //                DUT.execute.d_pc_i, opc, fun, args);
