@@ -314,19 +314,23 @@ class ISATestRunner extends LoggerClient;
 	status = R_OK;
    endtask // runTest
 
-   task automatic runAllTests( string test_dir, string list_file );
+   task automatic runAllTests( string test_dir, string list_file, inout int failCount);
       automatic string tests[$];
-      automatic int n, i, f, failCount = 0;
+      automatic int n, i, f;
       automatic string  failedTests = "";
 
-
       f = $fopen( $sformatf("%s/%s", test_dir, list_file ) ,"r");
+      if (f == 0)
+	$fatal;
 
       while(!$feof(f))
         begin
            automatic string fname;
 
            void'($fscanf(f,"%s", fname));
+
+	   if (fname[0] == "#" || fname == "")
+             continue;
 
 	   tests.push_back(fname);
         end
@@ -336,9 +340,6 @@ class ISATestRunner extends LoggerClient;
 	   automatic int failedTest;
 	   automatic TestStatus status;
 	   automatic string s;
-
-           if (tests[i][0] == "#" || tests[i] == "")
-             continue;
 
            // $display("Run %s", tests[i]);
            
@@ -360,12 +361,14 @@ class ISATestRunner extends LoggerClient;
 
 	end
 
+   endtask // runAllTests
+
+   task automatic testsResult(int failCount);
       if(failCount)
 	fail ( $sformatf( "%d tests FAILED", failCount ) );
       else
 	pass();
-
-   endtask // runAllTests
+   endtask
 
 endclass // ISATestRunner
 
@@ -373,6 +376,7 @@ endclass // ISATestRunner
       automatic int i;
       automatic ISATestRunner testRunner = new;
       automatic Logger l = Logger::get();
+      automatic int failCount;
 
       for(i=0;i<n_configs;i++)
 	begin
@@ -380,9 +384,11 @@ endclass // ISATestRunner
 
 	   l.startTest($sformatf( "Full ISA Test for feature set:%s", DUT.getConfigurationString() ) );
 
-	   testRunner.runAllTests("../../sw/testsuite/isa", "tests.lst" );
+	   failCount = 0;
+	   testRunner.runAllTests("../../sw/testsuite/isa", "tests.lst", failCount );
 	   if (configs[i].ecc)
-	     testRunner.runAllTests("../../sw/testsuite/isa", "tests-urv.lst" );
+	     testRunner.runAllTests("../../sw/testsuite/isa", "tests-urv.lst", failCount );
+	   testRunner.testsResult(failCount);
 	end
 
       l.writeTestReport("report.txt");
