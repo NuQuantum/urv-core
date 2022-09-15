@@ -40,16 +40,19 @@ module urv_cpu
     parameter g_with_compressed_insns = 0
    )
    (
-   input         clk_i,
-   input         rst_i,
+   input 	 clk_i,
+   input 	 rst_i,
 
-   input         irq_i,
+   input 	 irq_i,
+
+   // For ECC double error
+   output 	 fault_o,
 
    // instruction mem I/F
    output [31:0] im_addr_o,
-   output        im_rd_o, 
+   output 	 im_rd_o,
    input [31:0]  im_data_i,
-   input         im_valid_i,
+   input 	 im_valid_i,
 
    // data mem I/F
    // The interface is pipelined: store/load are asserted for one cycle
@@ -59,10 +62,10 @@ module urv_cpu
    input [31:0]  dm_data_l_i,
    output [3:0]  dm_data_select_o,
 
-   output        dm_store_o,
-   output        dm_load_o,
-   input         dm_load_done_i,
-   input         dm_store_done_i,
+   output 	 dm_store_o,
+   output 	 dm_load_o,
+   input 	 dm_load_done_i,
+   input 	 dm_store_done_i,
 
    // Debug I/F
    // Debug mode is entered either when dbg_force_i is set, or when the ebreak
@@ -73,14 +76,14 @@ module urv_cpu
    // In debug mode, instructions are executed from dbg_insn_i.
    // As instructions are always fetched, they must be always valid.  Use
    // a nop (0x13) if nothing should be executed.
-   input         dbg_force_i,
-   output        dbg_enabled_o,
+   input 	 dbg_force_i,
+   output 	 dbg_enabled_o,
    input [31:0]  dbg_insn_i,
-   input         dbg_insn_set_i,
-   output        dbg_insn_ready_o,
+   input 	 dbg_insn_set_i,
+   output 	 dbg_insn_ready_o,
 
    input [31:0]  dbg_mbx_data_i,
-   input         dbg_mbx_write_i,
+   input 	 dbg_mbx_write_i,
    output [31:0] dbg_mbx_data_o
    );
 
@@ -94,6 +97,8 @@ module urv_cpu
    wire 	 d_stall_req;
    wire 	 w_stall_req;
    wire 	 x_stall_req;
+
+   wire 	 x_fault;
 
    // X1->F stage interface
    wire [31:0] 	 x2f_pc_bra;
@@ -310,6 +315,8 @@ module urv_cpu
       .x_kill_i(x_kill),
       .x_stall_req_o(x_stall_req),
 
+      .x_fault_o(x_fault),
+
       // from register file
       .rf_rs1_value_i(x_rs1_value),
       .rf_rs2_value_i(x_rs2_value),
@@ -422,6 +429,8 @@ module urv_cpu
       .rf_rd_o(rf_rd),
       .rf_rd_write_o(rf_rd_write)
    );
+
+   assign fault_o = x_fault & g_with_ecc;
 
    // Built-in timer
    generate

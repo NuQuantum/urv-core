@@ -37,6 +37,8 @@ module urv_exec
    input 	     x_kill_i,
    output reg 	     x_stall_req_o,
 
+   //  Unfixable ecc error
+   output reg        x_fault_o,
 
    input [31:0]      d_pc_i,
    input [4:0] 	     d_rd_i,
@@ -513,6 +515,7 @@ module urv_exec
 	  w_load_o <= 0;
 	  w_store_o <= 0;
 	  w_ecc_flip_o <= 2'b0;
+	  x_fault_o <= 0;
           //  Values so that 0 could be written to register 0.
           w_rd_value_o <= 0;
           w_rd_o <= 0;
@@ -531,6 +534,7 @@ module urv_exec
                w_rd_o <= d_rd_i;
 	       w_rd_value_o <= rd_value;
 	       w_ecc_flip_o <= {2{d_is_write_ecc_i}} & rs2[1:0];
+	       x_fault_o <= d_is_fix_ecc_i & rf_rs1_ecc_err_i & rf_rs2_ecc_err_i;
 
 	       f_branch_take <= branch_take && !x_kill_i && d_valid_i;
                f_dbg_toggle_o <= g_with_hw_debug && d_is_ebreak_i && !x_kill_i && d_valid_i;
