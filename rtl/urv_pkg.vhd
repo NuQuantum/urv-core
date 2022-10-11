@@ -9,11 +9,14 @@ package urv_pkg is
            g_with_hw_div : natural := 1;
            g_with_hw_mul : natural := 1;
            g_with_hw_debug : natural := 0;
-           g_with_compressed_insns : natural := 0);
+           g_with_compressed_insns : natural := 0;
+           g_with_ecc : natural := 0);
         port (
             clk_i   : in  std_logic;
             rst_i   : in  std_logic;
             irq_i   : in  std_logic;
+            fault_o : out std_logic;
+
             -- instruction mem I/F
             im_addr_o  : out std_logic_vector (31 downto 0);
             im_rd_o    : out std_logic;
