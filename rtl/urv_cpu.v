@@ -172,6 +172,7 @@ module urv_cpu
 
    urv_fetch
     #(
+      .g_with_hw_debug(g_with_hw_debug),
       .g_with_compressed_insns(g_with_compressed_insns)
       )
    fetch
@@ -267,7 +268,9 @@ module urv_cpu
 
    // Register File (RF)
    urv_regfile
-     #(.g_with_ecc(g_with_ecc))
+     #(
+       .g_with_ecc(g_with_ecc)
+       )
    regfile
      (
       .clk_i(clk_i),

@@ -59,6 +59,7 @@ module urv_fetch
 );
 
    parameter g_with_compressed_insns = 0;
+   parameter g_with_hw_debug = 0;
 
    reg [31:0] pc;
    reg 	      rst_d;
@@ -120,7 +121,8 @@ module urv_fetch
 	       f_pc_o <= pc;
                pc <= pc_next;
 
-               if(!dbg_mode
+               if(g_with_hw_debug
+                  && !dbg_mode
                   && (dbg_force_i || x_dbg_toggle_i || pipeline_cnt != 0))
                  begin
                     //  Enter or entering in debug mode
@@ -137,7 +139,7 @@ module urv_fetch
                     else
                       pipeline_cnt <= pipeline_cnt + 1'b1;
                  end
-               else if(dbg_mode)
+               else if(g_with_hw_debug && dbg_mode)
                  begin
                     //  In debug mode
                     if (x_dbg_toggle_i)
