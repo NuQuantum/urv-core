@@ -429,13 +429,13 @@ module urv_exec
                  x_exception_cause <= 4'hx;
              endcase // case (d_opcode_i)
           end
-        else if (timer_pending)
+        else if (timer_pending && !d_dbg_mode_i)
           begin
              x_exception <= 1;
              x_interrupt <= 1;
              x_exception_cause <= `CAUSE_MACHINE_TIMER;
           end
-        else if (irq_pending)
+        else if (irq_pending && !d_dbg_mode_i)
           begin
              x_exception <= 1;
              x_interrupt <= 1;
