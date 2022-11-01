@@ -1,7 +1,7 @@
 sim_tool = "modelsim"
 sim_top="main"
 syn_device="xc6slx150t"
-sim_top="main"
+
 action = "simulation"
 target = "xilinx"
 include_dirs=["../../rtl", "../include"]
