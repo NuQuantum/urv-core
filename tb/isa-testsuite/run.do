@@ -4,6 +4,6 @@ vsim -L unisim -t 1ps work.main -novopt
 set StdArithNoWarnings 1
 set NumericStdNoWarnings 1
 
-do wave.do
+#do wave.do
 radix -hexadecimal
-run 1.7us
+run 8ms

@@ -1,6 +1,7 @@
 .section .text
 
-.global trap_entry
+	.global trap_entry
+	.weak trap_entry
 trap_entry:
  	csrrw	sp,mscratch,sp
  	addi	sp,sp,-320
@@ -48,35 +49,19 @@ trap_entry:
  	sw	t0,144(sp)
  	mv	a0,sp
 
-  la t0, jump_table
-  sll t3, t3, 2
-  add t0, t0, t3
-  lw t0, 0(t0)
-  la ra, jump_table_return
-  jr t0
+        bgez    t3, .Lexcept
+        jal     irq_handler
+        j       .Lret
 
-jump_table:
-  .word undefined_handler
-  .word undefined_handler
-  .word undefined_insn_handler
-  .word undefined_handler
-  .word undefined_handler
-  .word undefined_handler
-  .word undefined_handler
-  .word undefined_handler
-  .word undefined_handler
-  .word undefined_handler
-  .word undefined_handler
-  .word undefined_handler
-  .word undefined_handler
-  .word undefined_handler
-  .word undefined_handler
-  .word undefined_handler
+.Lexcept:
+        la t0, jump_table
+        sll t3, t3, 2
+        add t0, t0, t3
+        lw t0, 0(t0)
+        jalr t0
 
-jump_table_return:
-
-  mv  a0,sp
-
+.Lret:
+        mv  a0,sp
  	lw	t1,128(a0)
  	lw	t2,132(a0)
  	addi	sp,sp,320
@@ -113,12 +98,38 @@ jump_table_return:
  	lw	t5,120(a0)
  	lw	t6,124(a0)
  	lw	a0,40(a0)
- 	eret
+ 	mret
 
-.weak undefined_handler
+        .text
+
+        .weak undefined_handler
 undefined_handler:
 	 j undefined_handler
 
-.weak undefined_insn_handler
+        .weak undefined_insn_handler
 undefined_insn_handler:
-  j undefined_insn_handler
+        j undefined_insn_handler
+
+        .data
+jump_table:
+  .word undefined_handler       # 0: Insn address misaligned
+  .word undefined_handler
+  .word undefined_insn_handler  # 2: Illegal insn
+  .word undefined_handler
+  .word undefined_handler
+  .word undefined_handler
+  .word undefined_handler
+  .word undefined_handler
+  .word undefined_handler
+  .word undefined_handler
+  .word undefined_handler
+  .word undefined_handler
+  .word undefined_handler
+  .word undefined_handler
+  .word undefined_handler
+  .word undefined_handler
+
+
+	.weak irq_handler
+irq_handler:
+	j irq_handler

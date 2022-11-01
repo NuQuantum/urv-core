@@ -44,3 +44,4 @@ rv32ui-p-sub.ram
 rv32ui-p-sw.ram
 rv32ui-p-xori.ram
 rv32ui-p-xor.ram
+rv32ui-p-urv-mul-mulh.ram

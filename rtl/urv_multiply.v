@@ -1,22 +1,27 @@
 /*
-
- uRV - a tiny and dumb RISC-V core
- Copyright (c) 2015 CERN
- Author: Tomasz Włostowski <tomasz.wlostowski@cern.ch>
-
- This library is free software; you can redistribute it and/or
- modify it under the terms of the GNU Lesser General Public
- License as published by the Free Software Foundation; either
- version 3.0 of the License, or (at your option) any later version.
-
- This library is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- Lesser General Public License for more details.
-
- You should have received a copy of the GNU Lesser General Public
- License along with this library.
- 
+--------------------------------------------------------------------------------
+-- CERN BE-CO-HT
+-- uRV - a tiny and dumb RISC-V core
+-- https://www.ohwr.org/projects/urv-core
+--------------------------------------------------------------------------------
+--
+-- unit name:   urv_multiply
+--
+-- description: uRV multiplication unit
+--
+--------------------------------------------------------------------------------
+-- Copyright CERN 2015-2018
+--------------------------------------------------------------------------------
+-- Copyright and related rights are licensed under the Solderpad Hardware
+-- License, Version 2.0 (the "License"); you may not use this file except
+-- in compliance with the License. You may obtain a copy of the License at
+-- http://solderpad.org/licenses/SHL-2.0.
+-- Unless required by applicable law or agreed to in writing, software,
+-- hardware and materials distributed under this License is distributed on an
+-- "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+-- or implied. See the License for the specific language governing permissions
+-- and limitations under the License.
+--------------------------------------------------------------------------------
 */
 
 `include "urv_defs.v"
@@ -29,9 +34,9 @@ module urv_mult18x18
   (
    input 	 clk_i,
    input 	 rst_i,
-  
+
    input 	 stall_i,
-  
+
    input [17:0]  x_i,
    input [17:0]  y_i,
 
@@ -67,9 +72,9 @@ module urv_mult18x18
 		   .C(48'h0),
 		   .CARRYIN(),
 		   .D(18'b0),
-		   .CEA(1'b0),
-		   .CEB(1'b0),
-		   .CEC(1'b0),
+		   .CEA(1'b1),
+		   .CEB(1'b1),
+		   .CEC(1'b1),
 		   .CECARRYIN(1'b0),
 		   .CED(1'b0),
 		   .CEM(~stall_i),
@@ -90,6 +95,7 @@ module urv_mult18x18
    initial force D1.OPMODE_dly = 8'd1;
    // synthesis translate_on
 
+
 endmodule // urv_mult18x18
 `endif //  `ifdef PLATFORM_SPARTAN6
 
@@ -99,20 +105,20 @@ module urv_mult18x18
   (
    input 	 clk_i,
    input 	 rst_i,
-   
-   input 	 stall_i,
-   
-   input [17:0]  x_i,
-   input [17:0]  y_i,
 
-   output reg [35:0] q_o
+   input 	 stall_i,
+
+   input signed [17:0]  x_i,
+   input signed [17:0]  y_i,
+
+   output reg signed [35:0] q_o
    );
 
 
    always@(posedge clk_i)
      if(!stall_i)
        q_o <= x_i * y_i;
-   
+
 endmodule // urv_mult18x18
 `endif //  `ifdef URV_PLATFORM_GENERIC
 
@@ -122,9 +128,9 @@ module urv_mult18x18
   (
    input 	 clk_i,
    input 	 rst_i,
-  
+
    input 	 stall_i,
-  
+
    input [17:0]  x_i,
    input [17:0]  y_i,
 
@@ -155,36 +161,53 @@ endmodule // urv_mult18x18
 `endif
 
 
-module urv_multiply 
+module urv_multiply
   (
-   input 	 clk_i,
-   input 	 rst_i,
-   input 	 x_stall_i,
+   input 	     clk_i,
+   input 	     rst_i,
+   input 	     x_stall_i,
+   input 	     x_kill_i,
+   output 	     x_stall_req_o,
    
-   input [31:0]  d_rs1_i,
-   input [31:0]  d_rs2_i,
-   input [2:0] 	 d_fun_i,
+   input [31:0]      d_rs1_i,
+   input [31:0]      d_rs2_i,
+   input [2:0] 	     d_fun_i,
+   input 	     d_is_multiply_i,
 
-   output reg [31:0] w_rd_o
+// multiply result for MUL instructions, bypassed to W-stage to achieve 1-cycle performance
+// without much penalty on clock speed
+   output [31:0]     w_rd_o,
+
+// multiply result for MULH(S)(U) instructions. Goes to the X stage
+// destination value mux.
+   output reg [31:0] x_rd_o
    );
 
+   parameter g_with_hw_mulh = 0;
 
-   wire[17:0] xl_u = {1'b0, d_rs1_i[16:0] };
+   wire[17:0] xl_u = {1'b0, d_rs1_i[16:0] }; // 17 bits
    wire[17:0] yl_u = {1'b0, d_rs2_i[16:0] };
 
-   wire[17:0] xl_s = {d_rs1_i[16], d_rs1_i[16:0] };
-   wire[17:0] yl_s = {d_rs2_i[16], d_rs2_i[16:0] };
 
-   wire[17:0] xh = { {3{d_rs1_i[31]}}, d_rs1_i[31:17] };
-   wire[17:0] yh = { {3{d_rs2_i[31]}}, d_rs2_i[31:17] };
-
-   wire [35:0] 	     yl_xl, yl_xh, yh_xl;
+   wire       sign_extend_xh = (d_fun_i == `FUNC_MULH || d_fun_i == `FUNC_MULHSU) ? d_rs1_i[31] : 1'b0 ;
+   wire       sign_extend_yh = (d_fun_i == `FUNC_MULH)  ? d_rs2_i[31] : 1'b0 ;
    
-   urv_mult18x18 mul0 
+   wire signed [17:0] xh = { {3{sign_extend_xh}}, d_rs1_i[31:17] }; // 15 bits
+   wire signed [17:0] yh = { {3{sign_extend_yh}}, d_rs2_i[31:17] };
+
+   wire signed [35:0] 	      xh_yh;
+   wire signed [35:0] yl_xl, yl_xh, yh_xl;
+
+   wire              mul_stall_req;
+   reg 		     mul_stall_req_d0;
+   reg 		     mul_stall_req_d1;
+
+
+   urv_mult18x18 mul0
      (
       .clk_i(clk_i),
       .rst_i(rst_i),
-      .stall_i(x_stall_i),
+      .stall_i(1'b0),
 
       .x_i(xl_u),
       .y_i(yl_u),
@@ -195,9 +218,9 @@ module urv_multiply
      (
       .clk_i(clk_i),
       .rst_i(rst_i),
-      .stall_i(x_stall_i),
+      .stall_i(1'b0),
 
-      .x_i(xl_s),
+      .x_i(xl_u),
       .y_i(yh),
       .q_o(yh_xl)
       );
@@ -206,19 +229,69 @@ module urv_multiply
      (
       .clk_i(clk_i),
       .rst_i(rst_i),
-      .stall_i(x_stall_i),
+      .stall_i(1'b0),
 
-      .x_i(yl_s),
+      .x_i(yl_u),
       .y_i(xh),
       .q_o(yl_xh)
       );
+
+   generate
+      if (g_with_hw_mulh)
+	begin
+
+	   urv_mult18x18 mul3
+	     (
+	      .clk_i(clk_i),
+	      .rst_i(rst_i),
+	      .stall_i(1'b0),
+
+	      .x_i(yh),
+	      .y_i(xh),
+	      .q_o(xh_yh)
+	      );
+	end
+   endgenerate
+
+   wire [63:0] 	     mul_result;
+
+   wire [63:0] 	     yl_xl_ext = yl_xl;
+   wire [63:0] 	     yh_xl_ext = { {15{yh_xl[35] } }, yh_xl, 17'h0 };
+   wire [63:0] 	     yl_xh_ext = { {15{yl_xh[35] } }, yl_xh, 17'h0 };
+   wire [63:0] 	     yh_xh_ext = { xh_yh, 34'h0 };
    
-   always@*
-     w_rd_o <= yl_xl + {yl_xh[14:0], 17'h0} + {yh_xl[14:0], 17'h0};
- 
+   generate
+      if (g_with_hw_mulh)
+	begin
+	   assign mul_result = yl_xl_ext + yh_xl_ext + yl_xh_ext + yh_xh_ext;
+	   
+	   assign mul_stall_req = !x_kill_i && !mul_stall_req_d1 && d_is_multiply_i && d_fun_i != `FUNC_MUL;
+
+	   always@(posedge clk_i)
+	     x_rd_o <= mul_result[63:32]; 
+	   
+	   always@(posedge clk_i)
+	     if (rst_i)
+	       begin
+		  mul_stall_req_d0 <= 0;
+		  mul_stall_req_d1 <= 0;
+	       end else begin
+		  mul_stall_req_d0 <= mul_stall_req;
+		  mul_stall_req_d1 <= mul_stall_req_d0;
+	       end
+	end
+
+      else // no hardware multiply high
+	begin
+	   assign mul_result = yl_xl + {yl_xh[14:0], 17'h0} + {yh_xl[14:0], 17'h0};
+
+	   assign mul_stall_req = 1'b0;
+	end // else: !if(g_with_hw_mulh)
+      
+   endgenerate
+
+   assign x_stall_req_o = mul_stall_req;
+   
+   assign w_rd_o = mul_result[31:0];
+
 endmodule // urv_multiply
-
-
-   
-   
-

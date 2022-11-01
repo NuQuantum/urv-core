@@ -1,136 +1,65 @@
 onerror {resume}
 quietly WaveActivateNextPane {} 0
-add wave -noupdate -expand -group Exec /main/DUT/execute/clk_i
-add wave -noupdate -expand -group Exec /main/DUT/execute/rst_i
-add wave -noupdate -expand -group Exec /main/DUT/execute/x_stall_i
-add wave -noupdate -expand -group Exec /main/DUT/execute/x_kill_i
-add wave -noupdate -expand -group Exec /main/DUT/execute/x_stall_req_o
-add wave -noupdate -expand -group Exec /main/DUT/execute/d_pc_i
-add wave -noupdate -expand -group Exec /main/DUT/execute/d_rd_i
-add wave -noupdate -expand -group Exec /main/DUT/execute/d_fun_i
-add wave -noupdate -expand -group Exec /main/DUT/execute/rf_rs1_value_i
-add wave -noupdate -expand -group Exec /main/DUT/execute/rf_rs2_value_i
-add wave -noupdate -expand -group Exec /main/DUT/execute/d_valid_i
-add wave -noupdate -expand -group Exec /main/DUT/execute/d_opcode_i
-add wave -noupdate -expand -group Exec /main/DUT/execute/d_shifter_sign_i
-add wave -noupdate -expand -group Exec /main/DUT/execute/d_is_csr_i
-add wave -noupdate -expand -group Exec /main/DUT/execute/d_is_eret_i
-add wave -noupdate -expand -group Exec /main/DUT/execute/d_csr_imm_i
-add wave -noupdate -expand -group Exec /main/DUT/execute/d_csr_sel_i
-add wave -noupdate -expand -group Exec /main/DUT/execute/d_imm_i
-add wave -noupdate -expand -group Exec /main/DUT/execute/d_is_signed_compare_i
-add wave -noupdate -expand -group Exec /main/DUT/execute/d_is_signed_alu_op_i
-add wave -noupdate -expand -group Exec /main/DUT/execute/d_is_add_i
-add wave -noupdate -expand -group Exec /main/DUT/execute/d_is_shift_i
-add wave -noupdate -expand -group Exec /main/DUT/execute/d_is_load_i
-add wave -noupdate -expand -group Exec /main/DUT/execute/d_is_store_i
-add wave -noupdate -expand -group Exec /main/DUT/execute/d_is_divide_i
-add wave -noupdate -expand -group Exec /main/DUT/execute/d_is_undef_i
-add wave -noupdate -expand -group Exec /main/DUT/execute/d_alu_op1_i
-add wave -noupdate -expand -group Exec /main/DUT/execute/d_alu_op2_i
-add wave -noupdate -expand -group Exec /main/DUT/execute/d_use_op1_i
-add wave -noupdate -expand -group Exec /main/DUT/execute/d_use_op2_i
-add wave -noupdate -expand -group Exec /main/DUT/execute/d_rd_source_i
-add wave -noupdate -expand -group Exec /main/DUT/execute/d_rd_write_i
-add wave -noupdate -expand -group Exec /main/DUT/execute/f_branch_target_o
-add wave -noupdate -expand -group Exec /main/DUT/execute/f_branch_take_o
-add wave -noupdate -expand -group Exec /main/DUT/execute/irq_i
-add wave -noupdate -expand -group Exec /main/DUT/execute/w_fun_o
-add wave -noupdate -expand -group Exec /main/DUT/execute/w_load_o
-add wave -noupdate -expand -group Exec /main/DUT/execute/w_store_o
-add wave -noupdate -expand -group Exec /main/DUT/execute/w_valid_o
-add wave -noupdate -expand -group Exec /main/DUT/execute/w_rd_o
-add wave -noupdate -expand -group Exec /main/DUT/execute/w_rd_value_o
-add wave -noupdate -expand -group Exec /main/DUT/execute/w_rd_write_o
-add wave -noupdate -expand -group Exec /main/DUT/execute/w_dm_addr_o
-add wave -noupdate -expand -group Exec /main/DUT/execute/w_rd_source_o
-add wave -noupdate -expand -group Exec /main/DUT/execute/w_rd_shifter_o
-add wave -noupdate -expand -group Exec /main/DUT/execute/w_rd_multiply_o
-add wave -noupdate -expand -group Exec /main/DUT/execute/dm_addr_o
-add wave -noupdate -expand -group Exec /main/DUT/execute/dm_data_s_o
-add wave -noupdate -expand -group Exec /main/DUT/execute/dm_data_select_o
-add wave -noupdate -expand -group Exec /main/DUT/execute/dm_store_o
-add wave -noupdate -expand -group Exec /main/DUT/execute/dm_load_o
-add wave -noupdate -expand -group Exec /main/DUT/execute/dm_ready_i
-add wave -noupdate -expand -group Exec /main/DUT/execute/csr_time_i
-add wave -noupdate -expand -group Exec /main/DUT/execute/csr_cycles_i
-add wave -noupdate -expand -group Exec /main/DUT/execute/timer_tick_i
-add wave -noupdate -expand -group Exec /main/DUT/execute/rs1
-add wave -noupdate -expand -group Exec /main/DUT/execute/rs2
-add wave -noupdate -expand -group Exec /main/DUT/execute/alu_op1
-add wave -noupdate -expand -group Exec /main/DUT/execute/alu_op2
-add wave -noupdate -expand -group Exec /main/DUT/execute/alu_result
-add wave -noupdate -expand -group Exec /main/DUT/execute/rd_value
-add wave -noupdate -expand -group Exec /main/DUT/execute/exception_taken
-add wave -noupdate -expand -group Exec /main/DUT/execute/branch_take
-add wave -noupdate -expand -group Exec /main/DUT/execute/branch_condition_met
-add wave -noupdate -expand -group Exec /main/DUT/execute/branch_target
-add wave -noupdate -expand -group Exec /main/DUT/execute/dm_addr
-add wave -noupdate -expand -group Exec /main/DUT/execute/dm_data_s
-add wave -noupdate -expand -group Exec /main/DUT/execute/dm_select_s
-add wave -noupdate -expand -group Exec /main/DUT/execute/cmp_op1
-add wave -noupdate -expand -group Exec /main/DUT/execute/cmp_op2
-add wave -noupdate -expand -group Exec /main/DUT/execute/cmp_rs
-add wave -noupdate -expand -group Exec /main/DUT/execute/cmp_equal
-add wave -noupdate -expand -group Exec /main/DUT/execute/cmp_lt
-add wave -noupdate -expand -group Exec /main/DUT/execute/f_branch_take
-add wave -noupdate -expand -group Exec /main/DUT/execute/rd_csr
-add wave -noupdate -expand -group Exec /main/DUT/execute/rd_div
-add wave -noupdate -expand -group Exec /main/DUT/execute/exception
-add wave -noupdate -expand -group Exec /main/DUT/execute/csr_mie
-add wave -noupdate -expand -group Exec /main/DUT/execute/csr_mip
-add wave -noupdate -expand -group Exec /main/DUT/execute/csr_mepc
-add wave -noupdate -expand -group Exec /main/DUT/execute/csr_mstatus
-add wave -noupdate -expand -group Exec /main/DUT/execute/csr_mcause
-add wave -noupdate -expand -group Exec /main/DUT/execute/csr_write_value
-add wave -noupdate -expand -group Exec /main/DUT/execute/exception_address
-add wave -noupdate -expand -group Exec /main/DUT/execute/exception_vector
-add wave -noupdate -expand -group Exec /main/DUT/execute/exception_pc
-add wave -noupdate -expand -group Exec /main/DUT/execute/alu_addsub_op1
-add wave -noupdate -expand -group Exec /main/DUT/execute/alu_addsub_op2
-add wave -noupdate -expand -group Exec /main/DUT/execute/alu_addsub_result
-add wave -noupdate -expand -group Exec /main/DUT/execute/divider_stall_req
-add wave -noupdate -expand -group Exec /main/DUT/execute/unaligned_addr
-add wave -noupdate -expand -group Except /main/DUT/execute/exception_unit/clk_i
-add wave -noupdate -expand -group Except /main/DUT/execute/exception_unit/rst_i
-add wave -noupdate -expand -group Except /main/DUT/execute/exception_unit/x_stall_i
-add wave -noupdate -expand -group Except /main/DUT/execute/exception_unit/x_kill_i
-add wave -noupdate -expand -group Except /main/DUT/execute/exception_unit/d_is_csr_i
-add wave -noupdate -expand -group Except /main/DUT/execute/exception_unit/d_is_eret_i
-add wave -noupdate -expand -group Except /main/DUT/execute/exception_unit/d_fun_i
-add wave -noupdate -expand -group Except /main/DUT/execute/exception_unit/d_csr_imm_i
-add wave -noupdate -expand -group Except /main/DUT/execute/exception_unit/d_csr_sel_i
-add wave -noupdate -expand -group Except /main/DUT/execute/exception_unit/exp_irq_i
-add wave -noupdate -expand -group Except /main/DUT/execute/exception_unit/exp_tick_i
-add wave -noupdate -expand -group Except /main/DUT/execute/exception_unit/exp_breakpoint_i
-add wave -noupdate -expand -group Except /main/DUT/execute/exception_unit/exp_unaligned_load_i
-add wave -noupdate -expand -group Except /main/DUT/execute/exception_unit/exp_unaligned_store_i
-add wave -noupdate -expand -group Except /main/DUT/execute/exception_unit/exp_invalid_insn_i
-add wave -noupdate -expand -group Except /main/DUT/execute/exception_unit/x_csr_write_value_i
-add wave -noupdate -expand -group Except /main/DUT/execute/exception_unit/x_exception_o
-add wave -noupdate -expand -group Except /main/DUT/execute/exception_unit/x_exception_pc_i
-add wave -noupdate -expand -group Except /main/DUT/execute/exception_unit/x_exception_pc_o
-add wave -noupdate -expand -group Except /main/DUT/execute/exception_unit/x_exception_vector_o
-add wave -noupdate -expand -group Except /main/DUT/execute/exception_unit/x_exception_taken_i
-add wave -noupdate -expand -group Except /main/DUT/execute/exception_unit/csr_mstatus_o
-add wave -noupdate -expand -group Except /main/DUT/execute/exception_unit/csr_mip_o
-add wave -noupdate -expand -group Except /main/DUT/execute/exception_unit/csr_mie_o
-add wave -noupdate -expand -group Except /main/DUT/execute/exception_unit/csr_mepc_o
-add wave -noupdate -expand -group Except /main/DUT/execute/exception_unit/csr_mcause_o
-add wave -noupdate -expand -group Except /main/DUT/execute/exception_unit/csr_mepc
-add wave -noupdate -expand -group Except /main/DUT/execute/exception_unit/csr_mie
-add wave -noupdate -expand -group Except /main/DUT/execute/exception_unit/csr_ie
-add wave -noupdate -expand -group Except /main/DUT/execute/exception_unit/csr_mcause
-add wave -noupdate -expand -group Except /main/DUT/execute/exception_unit/exception
-add wave -noupdate -expand -group Except /main/DUT/execute/exception_unit/cause
-add wave -noupdate -expand -group Except /main/DUT/execute/exception_unit/except_vec_masked
-add wave -noupdate -expand -group Except /main/DUT/execute/exception_unit/exception_pending
-add wave -noupdate -expand -group Except /main/DUT/execute/exception_unit/csr_mip
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/clk_i}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/rst_i}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/im_addr_o}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/im_data_i}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/im_valid_i}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/dm_addr_o}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/dm_data_s_o}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/dm_data_l_i}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/dm_data_select_o}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/dm_ready_i}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/dm_store_o}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/dm_load_o}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/dm_load_done_i}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/dm_store_done_i}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/execute/d_pc_i}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/execute/d_valid_i}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/execute/d_is_load_i}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/execute/d_is_store_i}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/execute/d_opcode_i}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/execute/d_imm_i}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/execute/x_kill_i}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/execute/x_stall_req_o}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/execute/x_stall_i}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/writeback/x_valid_i}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/decode/x_rd_o}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/decode/x_rs1_o}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/decode/x_rs2_o}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/execute/rs1}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/execute/rs2}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/decode/d_stall_i}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/decode/d_kill_i}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/decode/d_stall_req_o}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/decode/rf_rs1_o}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/decode/rf_rs2_o}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/execute/rf_rs1_value_i}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/execute/rf_rs2_value_i}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/regfile/rs1_bypass_x}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/regfile/rs2_bypass_x}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/regfile/rs1_bypass_w}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/regfile/rs2_bypass_w}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/regfile/x_rs1_value_o}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/regfile/x_rs2_value_o}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/regfile/w_bypass_rd_write_i}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/regfile/w_rd_i}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/regfile/w_rd_value_i}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/regfile/w_rd_store_i}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/regfile/bank0/ram}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/execute/w_valid_o}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/execute/w_rd_o}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/execute/w_rd_value_o}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/execute/w_rd_write_o}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/execute/w_rd_source_o}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/execute/w_rd_shifter_o}
+add wave -noupdate {/main/DUT/genblk1[0]/DUTx/execute/w_rd_multiply_o}
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {2308604 ps} 0}
-configure wave -namecolwidth 250
+WaveRestoreCursors {{Cursor 1} {2765000 ps} 0}
+quietly wave cursor active 1
+configure wave -namecolwidth 237
 configure wave -valuecolwidth 100
-configure wave -justifyvalue left
+configure wave -justifyvalue right
 configure wave -signalnamewidth 1
 configure wave -snapdistance 10
 configure wave -datasetprefix 0
@@ -142,4 +71,4 @@ configure wave -griddelta 40
 configure wave -timeline 0
 configure wave -timelineunits ps
 update
-WaveRestoreZoom {0 ps} {7564032 ps}
+WaveRestoreZoom {2640264 ps} {2759971 ps}

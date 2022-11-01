@@ -2,10 +2,12 @@ char dupa[64];
 
 const char *hello="Hello, world";
 
-volatile int *TX_REG = 0x100000;
-main()
+volatile int *TX_REG = (volatile int *)0x100000;
+
+void
+main(void)
 {
-    char *s = hello;
+    const char *s = hello;
     while(*s) { *TX_REG = *s++; }
     for(;;);
 }
