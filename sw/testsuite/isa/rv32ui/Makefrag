@@ -22,7 +22,8 @@ rv32ui_sc_tests = \
 	srl srli \
 	sub \
 	xor xori \
-	csr
+	csr \
+	urv-mul-mulh
 
 rv32ui_mc_tests = 
 #	lrsc

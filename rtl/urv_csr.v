@@ -1,22 +1,27 @@
 /*
-
- uRV - a tiny and dumb RISC-V core
- Copyright (c) 2015 CERN
- Author: Tomasz Włostowski <tomasz.wlostowski@cern.ch>
-
- This library is free software; you can redistribute it and/or
- modify it under the terms of the GNU Lesser General Public
- License as published by the Free Software Foundation; either
- version 3.0 of the License, or (at your option) any later version.
-
- This library is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- Lesser General Public License for more details.
-
- You should have received a copy of the GNU Lesser General Public
- License along with this library.
- 
+--------------------------------------------------------------------------------
+-- CERN BE-CO-HT
+-- uRV - a tiny and dumb RISC-V core
+-- https://www.ohwr.org/projects/urv-core
+--------------------------------------------------------------------------------
+--
+-- unit name:   urv_csr
+--
+-- description: uRV CSR
+--
+--------------------------------------------------------------------------------
+-- Copyright CERN 2015-2018
+--------------------------------------------------------------------------------
+-- Copyright and related rights are licensed under the Solderpad Hardware
+-- License, Version 2.0 (the "License"); you may not use this file except
+-- in compliance with the License. You may obtain a copy of the License at
+-- http://solderpad.org/licenses/SHL-2.0.
+-- Unless required by applicable law or agreed to in writing, software,
+-- hardware and materials distributed under this License is distributed on an
+-- "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+-- or implied. See the License for the specific language governing permissions
+-- and limitations under the License.
+--------------------------------------------------------------------------------
 */
 
 `include "urv_defs.v"
@@ -39,7 +44,7 @@ module urv_csr
    
    input [31:0]      d_rs1_i,
    
-   output reg [31:0] x_rd_o,
+   output [31:0]     x_rd_o,
    
    input [39:0]      csr_time_i,
    input [39:0]      csr_cycles_i,
@@ -52,12 +57,19 @@ module urv_csr
    input [31:0]      csr_mip_i,
    input [31:0]      csr_mie_i,
    input [31:0]      csr_mepc_i,
-   input [31:0]      csr_mcause_i
+   input [31:0]      csr_mcause_i,
 
+   //  Debug mailboxes
+   input [31:0]      dbg_mbx_data_i,
+   input             dbg_mbx_write_i,
+   output [31:0]     dbg_mbx_data_o
    );
+
+   parameter g_with_hw_debug = 0;
    
    reg [31:0] 	csr_mscratch; 
-   
+   reg [31:0]   mbx_data;
+
    reg [31:0] 	csr_in1;
    reg [31:0] 	csr_in2;
    reg [31:0] 	csr_out;
@@ -75,11 +87,12 @@ module urv_csr
        `CSR_ID_MCAUSE: csr_in1 <= csr_mcause_i;
        `CSR_ID_MIP: csr_in1 <= csr_mip_i;
        `CSR_ID_MIE: csr_in1 <= csr_mie_i;
-       default: csr_in1 <= 32'hx;
+       `CSR_ID_DBGMBX: csr_in1 <= g_with_hw_debug ? mbx_data : 32'h0;
+       `CSR_ID_MIMPID: csr_in1 <= 32'h20190131;
+       default: csr_in1 <= 32'h0;
      endcase // case (d_csr_sel_i)
 
-   always@*
-     x_rd_o <= csr_in1;
+   assign x_rd_o = csr_in1;
 
    genvar 	i;
 
@@ -95,8 +108,6 @@ module urv_csr
      endcase // case (d_fun_i)
 
    generate
-
-      
       for (i=0;i<32;i=i+1) 
 	begin : gen_csr_bits
 
@@ -115,28 +126,31 @@ module urv_csr
 		 csr_out[i] <= 32'hx;
 	     endcase // case (d_csr_op_i)
 	end // for (i=0;i<32;i=i+1)
-      
-      endgenerate
+   endgenerate
    
    
-   always@(posedge clk_i)
-     if(rst_i) 
-       csr_mscratch <= 0;
-     else if(!x_stall_i && !x_kill_i && d_is_csr_i) 
-       case (d_csr_sel_i)
-	 `CSR_ID_MSCRATCH: 
-	   csr_mscratch <= csr_out;
-       endcase // case (d_csr_sel_i)
-   
+    always@(posedge clk_i)
+     if(rst_i)
+       begin
+          csr_mscratch <= 0;
+          mbx_data <= 0;
+       end
+     else
+       begin
+          if (dbg_mbx_write_i && g_with_hw_debug)
+            mbx_data <= dbg_mbx_data_i;
+
+          if(!x_stall_i && !x_kill_i && d_is_csr_i)
+            case (d_csr_sel_i)
+	      `CSR_ID_MSCRATCH:
+	        csr_mscratch <= csr_out;
+              `CSR_ID_DBGMBX:
+		if(g_with_hw_debug)
+                  mbx_data <= csr_out;
+            endcase // case (d_csr_sel_i)
+       end // else: !if(rst_i)
+
+   assign dbg_mbx_data_o = mbx_data;
 
    assign x_csr_write_value_o = csr_out;
-
-   
 endmodule
-       
-
-
-   
-   
-   
-   

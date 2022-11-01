@@ -1,22 +1,27 @@
 /*
-
-  uRV - a tiny and dumb RISC-V core
- Copyright (c) 2015 CERN
- Author: Tomasz Włostowski <tomasz.wlostowski@cern.ch>
-
- This library is free software; you can redistribute it and/or
- modify it under the terms of the GNU Lesser General Public
- License as published by the Free Software Foundation; either
- version 3.0 of the License, or (at your option) any later version.
-
- This library is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- Lesser General Public License for more details.
-
- You should have received a copy of the GNU Lesser General Public
- License along with this library.
- 
+--------------------------------------------------------------------------------
+-- CERN BE-CO-HT
+-- uRV - a tiny and dumb RISC-V core
+-- https://www.ohwr.org/projects/urv-core
+--------------------------------------------------------------------------------
+--
+-- unit name:   urv_decode
+--
+-- description: uRV CPU: instruction decode stage
+--
+--------------------------------------------------------------------------------
+-- Copyright CERN 2015-2018
+--------------------------------------------------------------------------------
+-- Copyright and related rights are licensed under the Solderpad Hardware
+-- License, Version 2.0 (the "License"); you may not use this file except
+-- in compliance with the License. You may obtain a copy of the License at
+-- http://solderpad.org/licenses/SHL-2.0.
+-- Unless required by applicable law or agreed to in writing, software,
+-- hardware and materials distributed under this License is distributed on an
+-- "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+-- or implied. See the License for the specific language governing permissions
+-- and limitations under the License.
+--------------------------------------------------------------------------------
 */
 
 `include "urv_defs.v"
@@ -49,31 +54,37 @@ module urv_decode
  output [4:0] 	   x_rs1_o,
  output [4:0] 	   x_rs2_o,
  output [4:0] 	   x_rd_o,
- output reg [4:0]  x_shamt_o,
  output reg [2:0]  x_fun_o,
  output [4:0] 	   x_opcode_o,
  output reg 	   x_shifter_sign_o,
- output reg 	   x_is_signed_compare_o,
  output reg 	   x_is_signed_alu_op_o,
  output reg 	   x_is_add_o,
- output 	   x_is_shift_o,
  output reg 	   x_is_load_o,
  output reg 	   x_is_store_o,
  output reg 	   x_is_undef_o,
+ output reg 	   x_is_write_ecc_o,
+ output reg 	   x_is_fix_ecc_o,
  output reg [2:0]  x_rd_source_o,
  output 	   x_rd_write_o,
  output reg [11:0] x_csr_sel_o,
  output reg [4:0]  x_csr_imm_o,
  output reg 	   x_is_csr_o,
- output reg 	   x_is_eret_o,
+ output reg 	   x_is_mret_o,
+ output reg 	   x_is_ebreak_o,
  output reg [31:0] x_imm_o,
  output reg [31:0] x_alu_op1_o,
  output reg [31:0] x_alu_op2_o,
  output reg 	   x_use_op1_o,
  output reg 	   x_use_op2_o,
- output reg [1:0]  x_op1_sel_o,
- output reg [1:0]  x_op2_sel_o
+ output reg 	   x_use_rs1_o,
+ output reg 	   x_use_rs2_o,
+ output reg 	   x_is_divide_o,
+ output reg 	   x_is_multiply_o
 );
+
+   parameter g_with_hw_div = 0;
+   parameter g_with_hw_mul = 0;
+   parameter g_with_hw_debug = 0;
 
    wire [4:0] f_rs1 = f_ir_i[19:15];
    wire [4:0] f_rs2 = f_ir_i[24:20];
@@ -102,13 +113,11 @@ module urv_decode
 
    reg 	      load_hazard;
 
-   // attempt to reuse ALU for jump address generation
-
-   wire d_is_shift = (d_fun == `FUNC_SL || d_fun == `FUNC_SR) &&
+   wire d_is_shift = !f_ir_i[25] && (d_fun == `FUNC_SL || d_fun == `FUNC_SR) &&
 	(d_opcode == `OPC_OP || d_opcode == `OPC_OP_IMM );
 
    reg 	x_is_mul;
-   wire d_is_mul = (f_ir_i[25] && d_fun == `FUNC_MUL);
+   wire d_is_mul = (f_ir_i[25] && (d_fun == `FUNC_MUL || d_fun == `FUNC_MULH || d_fun == `FUNC_MULHU || d_fun == `FUNC_MULHSU) );
 
    // hazzard detect combinatorial logic
    always@*
@@ -118,28 +127,26 @@ module urv_decode
 	    `OPC_LOAD:
 	      load_hazard <= 1;
 	    `OPC_OP:
+              // 2 cycles instructions
 	      load_hazard <= x_is_shift | x_is_mul;
 	    `OPC_OP_IMM:
+              // 2 cycles instructions
 	      load_hazard <= x_is_shift;
 	    default:
 	      load_hazard <= 0;
 	  endcase // case (x_opcode)
-       end else
+       end
+     else
 	 load_hazard <= 0;
    
    reg 	inserting_nop;
 
-   // bubble insertion following a hazzard
+   // bubble insertion following a hazard (only 1 bubble).
    always@(posedge clk_i)
      if(rst_i)
        inserting_nop <= 0;
      else if (!d_stall_i)
-       begin
-	  if (inserting_nop)
-	    inserting_nop <= 0;
-	  else
-	    inserting_nop <= load_hazard;
-       end
+       inserting_nop <= load_hazard && !inserting_nop;
 
    assign d_stall_req_o = load_hazard && !inserting_nop;
 
@@ -151,7 +158,9 @@ module urv_decode
        begin
 	  x_pc_o <= 0;
 	  x_valid <= 0;
-       end else if(!d_stall_i) begin
+       end
+     else if(!d_stall_i)
+       begin
 	  x_pc_o <= f_pc_i;
 
 	  if (load_hazard && !inserting_nop)
@@ -163,11 +172,10 @@ module urv_decode
 	  x_rs2 <= f_rs2;
 	  x_rd <= f_rd;
 	  x_opcode <= d_opcode;
-	  
-	  x_shamt_o <= f_ir_i[24:20];
        end
    
    // ALU function decoding
+   // attempt to reuse ALU for jump address generation
    always@(posedge clk_i)
      if(!d_stall_i)
        case (d_opcode)
@@ -260,6 +268,31 @@ module urv_decode
 	  endcase // case (d_opcode_i)
        end // if (!d_stall_i)
    
+
+   always@(posedge clk_i)
+     if(!d_stall_i)
+       case (d_opcode)
+	 `OPC_JALR, `OPC_LOAD, `OPC_OP_IMM:
+	   begin
+	      x_use_rs1_o <= 1'b1;
+	      x_use_rs2_o <= 1'b0;
+	   end
+	 `OPC_STORE, `OPC_BRANCH, `OPC_OP, `OPC_CUST2:
+	   begin
+	      x_use_rs1_o <= 1'b1;
+	      x_use_rs2_o <= 1'b1;
+	   end
+	 `OPC_SYSTEM:
+	   begin
+	      x_use_rs1_o <= d_fun[2] == 1'b0 && d_fun[1:0] != 2'b0;
+	      x_use_rs2_o <= 1'b0;
+	   end
+	 default:
+	   begin
+	      x_use_rs1_o <= 1'b0;
+	      x_use_rs2_o <= 1'b0;
+	   end
+       endcase
    
    wire d_rd_nonzero = (f_rd != 0);
    
@@ -269,10 +302,13 @@ module urv_decode
        begin
 	  x_is_shift <= d_is_shift;
 
-	  x_is_load_o <= ( d_opcode == `OPC_LOAD && !load_hazard) ? 1'b1 : 1'b0;
-	  x_is_store_o <= ( d_opcode == `OPC_STORE && !load_hazard) ? 1'b1 : 1'b0;
-	  
-	  x_is_mul <= d_is_mul;
+	  x_is_load_o <= d_opcode == `OPC_LOAD && !load_hazard;
+	  x_is_store_o <= d_opcode == `OPC_STORE && !load_hazard;
+
+	  x_is_mul <= d_is_mul && g_with_hw_mul;
+
+	  x_is_write_ecc_o <= d_opcode == `OPC_CUST2 && d_fun == `FUNC_WRECC;
+	  x_is_fix_ecc_o <= d_opcode == `OPC_CUST2 && d_fun == `FUNC_FIXECC;
 
 	  case (d_opcode)
 	    `OPC_BRANCH:
@@ -283,24 +319,73 @@ module urv_decode
 
 	  case (d_opcode)
 	    `OPC_OP:
-	      x_is_add_o <= ~f_ir_i[30] && !(d_fun == `FUNC_SLT || d_fun == `FUNC_SLTU);
+	      x_is_add_o <= ~f_ir_i[30];
 	    `OPC_OP_IMM:
-	      x_is_add_o <= !(d_fun == `FUNC_SLT || d_fun == `FUNC_SLTU);
+	      x_is_add_o <= 1;
 	    `OPC_BRANCH:
 	      x_is_add_o <= 0;
 	    default:
 	      x_is_add_o <= 1;
 	  endcase // case (d_opcode)
 
-	  // all multiply/divide instructions except MUL
-	  x_is_undef_o <= (d_opcode == `OPC_OP && f_ir_i[25] && d_fun != `FUNC_MUL);
+	  // all multiply/divide instructions except
+	  if( d_opcode == `OPC_OP && f_ir_i[25] )
+	    begin
+	       case (d_fun)
+		 `FUNC_MUL:
+		   begin
+		      x_is_multiply_o <= g_with_hw_mul != 0;
+		      x_is_divide_o <= 0;
+		      x_is_undef_o <= g_with_hw_mul == 0;
+		   end
+		 `FUNC_MULH, `FUNC_MULHU, `FUNC_MULHSU:
+		   begin
+		      x_is_multiply_o <= g_with_hw_mul > 1;
+                      x_is_divide_o <= 0;
+		      x_is_undef_o <= g_with_hw_mul <= 1;
+		   end
+
+		 `FUNC_DIV, `FUNC_DIVU, `FUNC_REM, `FUNC_REMU:
+		   begin
+		      x_is_multiply_o <= 0;
+		      x_is_divide_o <= 1;
+		      x_is_undef_o <= !g_with_hw_div;
+		   end
+
+		 default:
+		   begin
+		      x_is_multiply_o <= 0;
+		      x_is_divide_o <= 0;
+		      x_is_undef_o <= 0;
+		   end
+		 
+
+	       endcase // case (d_fun)
+	    end else begin // if ( d_opcode == `OPC_OP && f_ir_i[25] )
+	       x_is_multiply_o <= 0;
+	       x_is_divide_o <= 0;
+	       x_is_undef_o <= 0;
+	    end // else: !if( d_opcode == `OPC_OP && f_ir_i[25] )
+
 	  
 	  if(d_is_shift)
 	    x_rd_source_o <= `RD_SOURCE_SHIFTER;
 	  else if (d_opcode == `OPC_SYSTEM)
 	    x_rd_source_o <= `RD_SOURCE_CSR;
-	  else if (d_opcode == `OPC_OP && !d_fun[2] && f_ir_i[25])
-	    x_rd_source_o <= `RD_SOURCE_MULTIPLY;
+	  else if (d_opcode == `OPC_OP && f_ir_i[25])
+	    begin
+	       // mul/div
+	       if( !d_fun[2] )
+		 begin
+		    if( d_fun == `FUNC_MUL )
+		      x_rd_source_o <= `RD_SOURCE_MULTIPLY;
+		    else
+		      x_rd_source_o <= `RD_SOURCE_MULH;
+		 end
+	       
+	       else
+		 x_rd_source_o <= `RD_SOURCE_DIVIDE;
+	    end
 	  else
 	    x_rd_source_o <= `RD_SOURCE_ALU;
 	  
@@ -310,6 +395,8 @@ module urv_decode
 	      x_rd_write <= d_rd_nonzero;
 	    `OPC_SYSTEM:
 	      x_rd_write <= d_rd_nonzero && (d_fun != 0); // CSR instructions write to RD
+	    `OPC_CUST2:
+	      x_rd_write <= 1'b1;
 	    default:
 	      x_rd_write <= 0;
 	  endcase // case (d_opcode)
@@ -323,13 +410,14 @@ module urv_decode
 	     x_csr_imm_o <= f_ir_i[19:15];
 	     x_csr_sel_o <= f_ir_i[31:20];
 	     x_is_csr_o <= (d_opcode == `OPC_SYSTEM) && (d_fun != 0);
-	     x_is_eret_o <= (d_opcode == `OPC_SYSTEM) && (d_fun == 0) && (f_ir_i [31:20] == 12'b000100000000);
+	     x_is_mret_o <= (d_opcode == `OPC_SYSTEM) && (d_fun == 0) && (f_ir_i [31:20] == `SYS_IMM_MRET);
+
+	     if(g_with_hw_debug)
+               x_is_ebreak_o <= (d_opcode == `OPC_SYSTEM) && (d_fun == 0) && (f_ir_i [31:20] == `SYS_IMM_EBREAK);
+	     else
+	       x_is_ebreak_o <= 1'b0;
 	  end
    
-   assign x_is_shift_o = x_is_shift;
    assign x_rd_write_o = x_rd_write;
 
 endmodule // rv_decode
-
-
-		     

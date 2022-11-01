@@ -1,18 +1,18 @@
---  
+--
 -- uRV - a tiny and dumb RISC-V core
 -- Copyright (c) 2015 CERN
 -- Author: Tomasz Włostowski <tomasz.wlostowski@cern.ch>
--- 
+--
 -- This library is free software; you can redistribute it and/or
 -- modify it under the terms of the GNU Lesser General Public
 -- License as published by the Free Software Foundation; either
 -- version 3.0 of the License, or (at your option) any later version.
--- 
+--
 -- This library is distributed in the hope that it will be useful,
 -- but WITHOUT ANY WARRANTY; without even the implied warranty of
 -- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 -- Lesser General Public License for more details.
--- 
+--
 -- You should have received a copy of the GNU Lesser General Public
 -- License along with this library.
 --
@@ -82,7 +82,7 @@ architecture wrapper of xurv_core is
       g_size       : integer;
       g_init_file  : string;
       g_simulation : boolean
-      ); 
+      );
     port (
       clk_i : in std_logic;
 
@@ -123,7 +123,7 @@ architecture wrapper of xurv_core is
   signal dm_mem_rdata, dm_wb_rdata : std_logic_vector(31 downto 0);
   signal dm_wb_write, dm_select_wb : std_logic;
   signal dm_data_write             : std_logic;
-  
+
 begin
 
   cpu_rst <= (not rst_n_i) or cpu_rst_i;
@@ -137,7 +137,7 @@ begin
         ha_im_access_d <= '0';
         ha_im_write    <= '0';
       else
-        
+
         ha_im_access   <= host_slave_i.cyc and host_slave_i.stb;
         ha_im_access_d <= ha_im_access;
 
@@ -169,7 +169,7 @@ begin
         dm_store_done        <= '0';
         dm_select_wb         <= '0';
       else
-        
+
         if(dm_cycle_in_progress = '0') then  -- access to internal memory
           if(dm_is_wishbone = '0') then
             if(dm_store = '1') then
@@ -294,7 +294,5 @@ begin
   host_slave_o.err   <= '0';
   host_slave_o.rty   <= '0';
 
-  
+
 end wrapper;
-
-

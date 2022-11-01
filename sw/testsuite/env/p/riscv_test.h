@@ -121,11 +121,11 @@ ecall:  ecall;                                                          \
 
 #define RVTEST_PASS                                                     \
 	la sp, _fstack;  la gp, _gp; jal rv_test_pass; \
-	la t0, 0x100004; sw t0, 0(t0); j ecall;
+	lui t0, %hi(0x100004); sw t0, %lo(0x100004)(t0); j ecall;
 
 #define RVTEST_FAIL                                                     \
         la sp, _fstack; la gp, _gp; mv a0, TESTNUM; jal rv_test_fail;\
-	la t0, 0x100004; sw t0, 0(t0); j ecall;
+	lui t0, %hi(0x100004); sw t0, %lo(0x100004)(t0); j ecall;
 
 //-----------------------------------------------------------------------
 // Data Section Macro

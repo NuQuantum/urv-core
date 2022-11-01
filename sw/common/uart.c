@@ -46,18 +46,10 @@ void uart_init_hw()
 
 }
 
-volatile int *TX_REG = 0x100000;
-
-
-void putc(char c)
-{
-    *TX_REG = c;
-}
-
 void uart_write_byte(int b)
 {
 #ifdef SIM
-    putc(b);
+    *(volatile int *)0x100000 = b;
 #else
 	if (b == '\n')
 		uart_write_byte('\r');
@@ -85,4 +77,3 @@ int puts(const char *s)
   while(c=*s++)
     uart_write_byte(c);
 }
-

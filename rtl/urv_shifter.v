@@ -1,22 +1,27 @@
 /*
-
- uRV - a tiny and dumb RISC-V core
- Copyright (c) 2015 CERN
- Author: Tomasz Włostowski <tomasz.wlostowski@cern.ch>
-
- This library is free software; you can redistribute it and/or
- modify it under the terms of the GNU Lesser General Public
- License as published by the Free Software Foundation; either
- version 3.0 of the License, or (at your option) any later version.
-
- This library is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- Lesser General Public License for more details.
-
- You should have received a copy of the GNU Lesser General Public
- License along with this library.
- 
+--------------------------------------------------------------------------------
+-- CERN BE-CO-HT
+-- uRV - a tiny and dumb RISC-V core
+-- https://www.ohwr.org/projects/urv-core
+--------------------------------------------------------------------------------
+--
+-- unit name:   urv_shifter
+--
+-- description: uRV shifter unit
+--
+--------------------------------------------------------------------------------
+-- Copyright CERN 2015-2018
+--------------------------------------------------------------------------------
+-- Copyright and related rights are licensed under the Solderpad Hardware
+-- License, Version 2.0 (the "License"); you may not use this file except
+-- in compliance with the License. You may obtain a copy of the License at
+-- http://solderpad.org/licenses/SHL-2.0.
+-- Unless required by applicable law or agreed to in writing, software,
+-- hardware and materials distributed under this License is distributed on an
+-- "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+-- or implied. See the License for the specific language governing permissions
+-- and limitations under the License.
+--------------------------------------------------------------------------------
 */
 
 `include "urv_defs.v"
@@ -39,11 +44,10 @@ module urv_shifter
      input 	       d_valid_i,
      input [31:0]      d_rs1_i,
      output reg [31:0] w_rd_o,
-    
+
      input [4:0]       d_shamt_i,
      input [2:0]       d_fun_i,
-     input 	       d_shifter_sign_i,
-     input 	       d_is_shift_i
+     input 	       d_shifter_sign_i
    );
 
    wire 	 extend_sign = ((d_fun_i == `FUNC_SR) && d_shifter_sign_i) ? d_rs1_i[31] : 1'b0;
@@ -61,9 +65,9 @@ module urv_shifter
    reg s2_extend_sign;
    reg [4:0] s2_shift;
    reg [2:0] s2_func;
-   
-   
-   
+
+
+
    // stage 1 pipe register
    always@(posedge clk_i)
      if (!x_stall_i)
@@ -73,9 +77,9 @@ module urv_shifter
 	  s2_func <= d_fun_i;
 	  s1_out <= shift_8;
        end
-   
+
    reg [31:0] shift_4, shift_2, shift_1, shift_post;
-   
+
    // stage 2
    always@*
      begin
@@ -89,4 +93,3 @@ module urv_shifter
      w_rd_o <= shift_post;
 
 endmodule // urv_shifter
-

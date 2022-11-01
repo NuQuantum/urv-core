@@ -619,6 +619,7 @@
 #define CAUSE_SUPERVISOR_ECALL 0x9
 #define CAUSE_HYPERVISOR_ECALL 0xa
 #define CAUSE_MACHINE_ECALL 0xb
+#define CAUSE_ECC_ERROR 0xf  // urv specific
 #endif
 #ifdef DECLARE_INSN
 DECLARE_INSN(add, MATCH_ADD, MASK_ADD)
