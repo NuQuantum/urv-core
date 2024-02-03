@@ -1,0 +1,15 @@
+CAPI=2:
+name: ohwr:urv:urv_pkg
+description: uRV VHDL Package
+
+filesets:
+  rtl:
+    files:
+      - rtl/urv_pkg.vhd
+    file_type: vhdlSource
+
+targets:
+  default: &default
+    filesets:
+      - rtl
+

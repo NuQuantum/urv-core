@@ -1,0 +1,28 @@
+CAPI=2:
+name: ohwr:urv:xurv_core
+description: Top level VHDL integration module
+
+filesets:
+  rtl:
+    depend:
+      - ohwr:general-cores:gencores_pkg
+      - ohwr:general-cores:genram_pkg
+      - ohwr:general-cores:wishbone_pkg
+      - ohwr:urv:urv_pkg
+      - ohwr:urv:cpu_core
+    files:
+      - rtl/urv_iram.v: { file_type: verilogSource }
+      - rtl/xurv_core.vhd: { file_type: vhdlSource }
+
+targets:
+  default: &default
+    filesets:
+      - rtl
+    toplevel: xurv_core
+
+  synth:
+    <<: *default
+    default_tool: vivado
+    tools:
+      vivado:
+        part: xc7z030ffg676-3

@@ -1,0 +1,14 @@
+`verilator_config
+
+// REVISIT: these all need fixing but just waived for now.
+lint_off --rule DECLFILENAME --file "*/urv_*.v"
+lint_off --rule COMBDLY --file "*/urv_*.v"
+lint_off --rule CASEINCOMPLETE --file "*/urv_csr.v"
+lint_off --rule CASEINCOMPLETE --file "*/urv_exceptions.v"
+lint_off --rule UNUSED --file "*/urv_*.v"
+lint_off --rule WIDTH --file "*/urv_multiply.v"
+
+// Use of integer parameter causes width mismatch; ignore.
+lint_off --rule WIDTH --file "*/urv_decode.v" --match "*g_with_hw_mul*"
+lint_off --rule WIDTH --file "*/urv_timer.v" --match "*'presc' generates 24 bits."
+lint_off --rule WIDTH --file "*/urv_exec.v" --match "*g_with_hw_mul*"
