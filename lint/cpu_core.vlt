@@ -7,6 +7,7 @@ lint_off --rule CASEINCOMPLETE --file "*/urv_csr.v"
 lint_off --rule CASEINCOMPLETE --file "*/urv_exceptions.v"
 lint_off --rule UNUSED --file "*/urv_*.v"
 lint_off --rule WIDTH --file "*/urv_multiply.v"
+lint_off --rule GENUNNAMED --file "*/urv_*.v"
 
 // Use of integer parameter causes width mismatch; ignore.
 lint_off --rule WIDTH --file "*/urv_decode.v" --match "*g_with_hw_mul*"

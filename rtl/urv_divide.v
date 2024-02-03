@@ -144,16 +144,16 @@ module urv_divide
 	    
 
 	    35:
-	      x_rd_o <= is_div_by_zero ? -1 : alu_result; // quotient
+	      x_rd_o <= is_div_by_zero ? -1 : alu_result[31:0]; // quotient
 
 	    36:
-	      x_rd_o <= alu_result; // remainder
+	      x_rd_o <= alu_result[31:0]; // remainder
 
 	    default: // 3..345 32 divider iterations
 	      begin
 
 		 q <= { q[30:0], alu_ge };
-		 r <= alu_ge ? alu_result : r_next;
+		 r <= alu_ge ? alu_result[31:0] : r_next;
 
 
 	      end

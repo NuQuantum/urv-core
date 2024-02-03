@@ -51,7 +51,7 @@ module urv_writeback
 
    input [31:0]  x_shifter_rd_value_i,
    input [31:0]  x_multiply_rd_value_i,
-   input [1:0] 	 x_rd_source_i,
+   input [2:0] 	 x_rd_source_i,
    input [1:0] 	 x_ecc_flip_i,
 
    input [31:0]  dm_data_l_i,
@@ -144,7 +144,8 @@ module urv_writeback
 	 assign rf_rd_ecc_flip_o = x_ecc_flip_i;
       end
       else
-	assign rf_rd_ecc_o = 6'bx;
+    assign rf_rd_ecc_o = {7{1'bX}};
+    assign rf_rd_ecc_flip_o = {2{1'bX}};
    endgenerate
 
    assign rf_rd_write_o = rf_rd_write;

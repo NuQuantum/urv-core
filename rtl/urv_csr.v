@@ -123,7 +123,7 @@ module urv_csr
 	       `CSR_OP_CSRRS:
 		 csr_out[i] <= csr_in2[i] ? 1'b1 : csr_in1[i];
 	       default:
-		 csr_out[i] <= 32'hx;
+		 csr_out[i] <= 1'bx;
 	     endcase // case (d_csr_op_i)
 	end // for (i=0;i<32;i=i+1)
    endgenerate

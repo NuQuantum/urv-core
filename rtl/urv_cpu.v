@@ -128,7 +128,7 @@ module urv_cpu
    wire [2:0] 	 d2x_fun;
    wire [4:0] 	 d2x_opcode;
    wire 	 d2x_shifter_sign;
-   wire 	 d2x_is_load, d2x_is_store, d2x_is_undef;
+   wire 	 d2x_is_add, d2x_is_load, d2x_is_store, d2x_is_undef;
    wire 	 d2x_is_write_ecc;
    wire 	 d2x_is_fix_ecc;
    wire [31:0] 	 d2x_imm;
@@ -154,7 +154,7 @@ module urv_cpu
    wire [2:0] 	 x2w_fun;
    wire 	 x2w_store;
    wire 	 x2w_load;
-   wire [1:0] 	 x2w_rd_source;
+   wire [2:0] 	 x2w_rd_source;
    wire 	 x2w_valid;
    wire [1:0]	 x2w_ecc_flip;
 
@@ -166,6 +166,7 @@ module urv_cpu
 
    // misc stuff
    wire [39:0] 	 csr_time, csr_cycles;
+   wire sys_tick;
 
    //  0: no multiply, 1: 32 bit multiply, 2: mulh.
    localparam p_with_hw_mul = g_with_hw_mul ? (g_with_hw_mul | (g_with_hw_mulh ? 2 : 0)) : 0;
